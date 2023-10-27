@@ -548,12 +548,9 @@ void SImGuiOverlay::Construct(const FArguments& Args)
 		FCoreDelegates::OnBeginFrame.AddSP(this, &SImGuiOverlay::BeginFrame);
 		FCoreDelegates::OnEndFrame.AddSP(this, &SImGuiOverlay::EndFrame);
 
-		if (GFrameCounter != 0)
-		{
-			// Create viewport data so ImGui can start immediately when midway through a frame
-			FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
-			BeginFrame();
-		}
+		// Create viewport data so ImGui can start a frame
+		FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
+		BeginFrame();
 	}
 }
 

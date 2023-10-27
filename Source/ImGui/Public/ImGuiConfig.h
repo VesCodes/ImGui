@@ -54,7 +54,7 @@ namespace ImGui
 		UE_NODISCARD_CTOR explicit FScopedContextSwitcher(ImGuiContext* Context);
 		~FScopedContextSwitcher();
 
-		/// Returns true if the current ImGui context is valid
+		/// Returns true if the current ImGui context is ready for use
 		explicit operator bool() const;
 
 	private:

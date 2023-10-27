@@ -17,7 +17,7 @@ THIRD_PARTY_INCLUDES_END
 #include "ImGuiModule.h"
 
 ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const int32 PieInstance)
-	: FScopedContextSwitcher(FImGuiModule::Get().GetContext(PieInstance))
+	: FScopedContextSwitcher(FImGuiModule::Get().FindOrCreateContext(PieInstance))
 {
 }
 
@@ -35,7 +35,7 @@ ImGui::FScopedContextSwitcher::~FScopedContextSwitcher()
 ImGui::FScopedContextSwitcher::operator bool() const
 {
 	const ImGuiContext* Context = GetCurrentContext();
-	return Context && Context->Initialized;
+	return Context && Context->Initialized && Context->WithinFrameScope;
 }
 
 ImGuiKey ImGui::ConvertKey(const FKey& Key)

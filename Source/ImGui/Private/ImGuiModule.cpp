@@ -10,6 +10,8 @@
 #include <Interfaces/IMainFrameModule.h>
 #endif
 
+#include <imgui_internal.h>
+
 #include "SImGuiOverlay.h"
 
 static void* ImGui_MemAlloc(size_t Size, void* UserData)
@@ -26,26 +28,6 @@ static void ImGui_MemFree(void* Ptr, void* UserData)
 void FImGuiModule::StartupModule()
 {
 	ImGui::SetAllocatorFunctions(ImGui_MemAlloc, ImGui_MemFree);
-
-#if WITH_EDITOR
-	IMainFrameModule& MainFrameModule = FModuleManager::LoadModuleChecked<IMainFrameModule>("MainFrame");
-	MainFrameModule.OnMainFrameCreationFinished().AddRaw(this, &FImGuiModule::OnMainFrameCreated);
-#endif
-
-	UGameViewportClient::OnViewportCreated().AddRaw(this, &FImGuiModule::OnViewportCreated);
-}
-
-void FImGuiModule::ShutdownModule()
-{
-#if WITH_EDITOR
-	IMainFrameModule* MainFrameModule = FModuleManager::GetModulePtr<IMainFrameModule>("MainFrame");
-	if (MainFrameModule)
-	{
-		MainFrameModule->OnMainFrameCreationFinished().RemoveAll(this);
-	}
-#endif
-
-	UGameViewportClient::OnViewportCreated().RemoveAll(this);
 }
 
 FImGuiModule& FImGuiModule::Get()
@@ -54,34 +36,58 @@ FImGuiModule& FImGuiModule::Get()
 	return Module;
 }
 
-void FImGuiModule::CreateContextForViewport(UGameViewportClient* Viewport)
+ImGuiContext* FImGuiModule::FindOrCreateContext(const int32 PieInstance)
 {
-	if (IsValid(Viewport))
+	ImGuiContext* Context = Contexts.FindRef(PieInstance);
+	if (!Context || !Context->Initialized)
 	{
-		const TSharedRef<SImGuiOverlay> Overlay = SNew(SImGuiOverlay);
-		Viewport->AddViewportWidgetContent(Overlay, TNumericLimits<int32>::Max());
-
-		Contexts.Add(GPlayInEditorID, Overlay->GetContext());
-
-		ImGui::FScopedContextSwitcher ContextSwitcher(Overlay->GetContext());
-
-		FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
-		if (ViewportData)
+#if WITH_EDITOR
+		if (GIsEditor && PieInstance == INDEX_NONE)
 		{
-			ViewportData->Window = Viewport->GetWindow();
-			ViewportData->Overlay = Overlay;
+			const IMainFrameModule* MainFrameModule = FModuleManager::GetModulePtr<IMainFrameModule>("MainFrame");
+			const TSharedPtr<SWindow> MainFrameWindow = MainFrameModule ? MainFrameModule->GetParentWindow() : nullptr;
+			if (MainFrameWindow.IsValid())
+			{
+				Context = CreateContextForWindow(MainFrameWindow.ToSharedRef());
+				Contexts.Add(PieInstance, Context);
+			}
+		}
+		else
+#endif
+		{
+			const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PieInstance);
+			UGameViewportClient* GameViewport = WorldContext ? WorldContext->GameViewport : GEngine->GameViewport;
+
+			if (IsValid(GameViewport))
+			{
+				const TSharedRef<SImGuiOverlay> Overlay = SNew(SImGuiOverlay);
+				GameViewport->AddViewportWidgetContent(Overlay, TNumericLimits<int32>::Max());
+
+				Context = Overlay->GetContext();
+				Contexts.Add(PieInstance, Context);
+
+				ImGui::FScopedContextSwitcher ContextSwitcher(Context);
+
+				FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
+				if (ViewportData)
+				{
+					ViewportData->Window = GameViewport->GetWindow();
+					ViewportData->Overlay = Overlay;
+				}
+			}
 		}
 	}
+
+	return Context;
 }
 
-void FImGuiModule::CreateContextForWindow(const TSharedRef<SWindow>& Window)
+ImGuiContext* FImGuiModule::CreateContextForWindow(const TSharedRef<SWindow>& Window)
 {
 	const TSharedRef<SImGuiOverlay> Overlay = SNew(SImGuiOverlay);
 	Window->AddOverlaySlot(TNumericLimits<int32>::Max())[Overlay];
 
-	Contexts.Add(INDEX_NONE, Overlay->GetContext());
-
-	ImGui::FScopedContextSwitcher ContextSwitcher(Overlay->GetContext());
+	ImGuiContext* Context = Overlay->GetContext();
+	ImGui::FScopedContextSwitcher ContextSwitcher(Context);
 
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
 	if (ViewportData)
@@ -89,27 +95,8 @@ void FImGuiModule::CreateContextForWindow(const TSharedRef<SWindow>& Window)
 		ViewportData->Window = Window;
 		ViewportData->Overlay = Overlay;
 	}
-}
 
-ImGuiContext* FImGuiModule::GetContext(const int32 ContextIdx) const
-{
-	return Contexts.FindRef(ContextIdx);
-}
-
-void FImGuiModule::OnMainFrameCreated(const TSharedPtr<SWindow> Window, bool bStartupDialog)
-{
-	if (Window.IsValid())
-	{
-		CreateContextForWindow(Window.ToSharedRef());
-	}
-}
-
-void FImGuiModule::OnViewportCreated()
-{
-	if (GEngine)
-	{
-		CreateContextForViewport(GEngine->GameViewport);
-	}
+	return Context;
 }
 
 IMPLEMENT_MODULE(FImGuiModule, ImGui);
