@@ -32,15 +32,6 @@ void FImGuiModule::StartupModule()
 	MainFrameModule.OnMainFrameCreationFinished().AddRaw(this, &FImGuiModule::OnMainFrameCreated);
 #endif
 
-	FSlateApplication::Get().OnPostTick().AddLambda([](float DeltaTime)
-	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(INDEX_NONE);
-		if (ContextSwitcher)
-		{
-			ImGui::ShowDemoWindow();
-		}
-	});
-
 	UGameViewportClient::OnViewportCreated().AddRaw(this, &FImGuiModule::OnViewportCreated);
 }
 
