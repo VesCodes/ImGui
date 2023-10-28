@@ -1,22 +1,9 @@
 ﻿#pragma once
 
-#include <Engine/Texture2D.h>
 #include <Framework/Application/IInputProcessor.h>
-#include <UObject/StrongObjectPtr.h>
 #include <Widgets/SLeafWidget.h>
 
 #include <imgui.h>
-#include <implot.h>
-
-class SImGuiOverlay;
-
-struct FImGuiViewportData
-{
-	static FImGuiViewportData* GetOrCreate(ImGuiViewport* Viewport);
-
-	TWeakPtr<SWindow> Window = nullptr;
-	TWeakPtr<SImGuiOverlay> Overlay = nullptr;
-};
 
 struct FImGuiDrawList
 {
@@ -53,7 +40,7 @@ public:
 		{
 		}
 
-		SLATE_ARGUMENT_DEFAULT(ImGuiContext*, Context) = nullptr;
+		SLATE_ARGUMENT(TSharedPtr<FImGuiContext>, Context);
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& Args);
@@ -64,25 +51,11 @@ public:
 	virtual bool SupportsKeyboardFocus() const override;
 	virtual FReply OnKeyChar(const FGeometry& MyGeometry, const FCharacterEvent& Event) override;
 
-	ImGuiContext* GetContext() const;
+	TSharedPtr<FImGuiContext> GetContext() const;
 	void SetDrawData(const ImDrawData* InDrawData);
 
 private:
-	void BeginFrame();
-	void EndFrame();
-
-	void OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics) const;
-
-	ImGuiContext* Context = nullptr;
-	ImPlotContext* PlotContext = nullptr;
-
-	bool bContextOwner = false;
-
-	char IniFilenameAnsi[1024] = {};
-	char LogFilenameAnsi[1024] = {};
-
+	TSharedPtr<FImGuiContext> Context = nullptr;
 	TSharedPtr<IInputProcessor> InputProcessor = nullptr;
-	TStrongObjectPtr<UTexture2D> FontAtlasTexturePtr = nullptr;
-
 	FImGuiDrawData DrawData;
 };

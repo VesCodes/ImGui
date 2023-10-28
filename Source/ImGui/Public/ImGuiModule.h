@@ -2,9 +2,8 @@
 
 #include <Modules/ModuleManager.h>
 
-struct ImGuiContext;
+class FImGuiContext;
 class SWindow;
-class SWidget;
 class UGameViewportClient;
 
 class IMGUI_API FImGuiModule : public IModuleInterface
@@ -18,11 +17,14 @@ public:
 
 	/// Finds or creates an ImGui context for an editor or game session
 	/// @param PieInstance Optional target Play-in-Editor instance, defaults to the current instance
-	ImGuiContext* FindOrCreateContext(const int32 PieInstance = GPlayInEditorID);
+	TSharedPtr<FImGuiContext> FindOrCreateContext(const int32 PieInstance = GPlayInEditorID);
 
 	/// Creates an ImGui context for a Slate window
-	static ImGuiContext* CreateContextForWindow(const TSharedRef<SWindow>& Window);
+	static TSharedPtr<FImGuiContext> CreateContextForWindow(const TSharedRef<SWindow>& Window);
+
+	/// Creates an ImGui context for a game viewport
+	static TSharedPtr<FImGuiContext> CreateContextForViewport(UGameViewportClient* GameViewport);
 
 private:
-	TMap<int32, ImGuiContext*> Contexts;
+	TMap<int32, TWeakPtr<FImGuiContext>> Contexts;
 };

@@ -33,7 +33,9 @@
 
 #define ImTextureID class UTexture2D*
 
+class FImGuiContext;
 struct ImGuiContext;
+struct ImPlotContext;
 enum ImGuiKey : int;
 struct FKey;
 
@@ -51,14 +53,16 @@ namespace ImGui
 	struct IMGUI_API FScopedContextSwitcher
 	{
 		UE_NODISCARD_CTOR explicit FScopedContextSwitcher(const int32 PieInstance = GPlayInEditorID);
-		UE_NODISCARD_CTOR explicit FScopedContextSwitcher(ImGuiContext* Context);
+		UE_NODISCARD_CTOR explicit FScopedContextSwitcher(const TSharedPtr<const FImGuiContext>& InContext);
 		~FScopedContextSwitcher();
 
 		/// Returns true if the current ImGui context is ready for use
 		explicit operator bool() const;
 
 	private:
+		TSharedPtr<const FImGuiContext> Context = nullptr;
 		ImGuiContext* PrevContext = nullptr;
+		ImPlotContext* PrevPlotContext = nullptr;
 	};
 
 	/// Converts between Unreal and ImGui key types

@@ -3,6 +3,7 @@
 #include <InputCoreTypes.h>
 #include <Engine/Texture2D.h>
 
+// ReSharper disable CppUnusedIncludeDirective
 THIRD_PARTY_INCLUDES_START
 #include <imgui.cpp>
 #include <imgui_demo.cpp>
@@ -13,7 +14,9 @@ THIRD_PARTY_INCLUDES_START
 #include <implot_demo.cpp>
 #include <implot_items.cpp>
 THIRD_PARTY_INCLUDES_END
+// ReSharper restore CppUnusedIncludeDirective
 
+#include "ImGuiContext.h"
 #include "ImGuiModule.h"
 
 ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const int32 PieInstance)
@@ -21,21 +24,34 @@ ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const int32 PieInstance)
 {
 }
 
-ImGui::FScopedContextSwitcher::FScopedContextSwitcher(ImGuiContext* Context)
+ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const TSharedPtr<const FImGuiContext>& InContext)
+	: Context(InContext)
 {
 	PrevContext = GetCurrentContext();
-	SetCurrentContext(Context);
+	PrevPlotContext = ImPlot::GetCurrentContext();
+
+	if (Context.IsValid())
+	{
+		SetCurrentContext(*Context);
+		ImPlot::SetCurrentContext(*Context);
+	}
+	else
+	{
+		SetCurrentContext(nullptr);
+		ImPlot::SetCurrentContext(nullptr);
+	}
 }
 
 ImGui::FScopedContextSwitcher::~FScopedContextSwitcher()
 {
 	SetCurrentContext(PrevContext);
+	ImPlot::SetCurrentContext(PrevPlotContext);
 }
 
 ImGui::FScopedContextSwitcher::operator bool() const
 {
-	const ImGuiContext* Context = GetCurrentContext();
-	return Context && Context->Initialized && Context->WithinFrameScope;
+	const ImGuiContext* CurrContext = GetCurrentContext();
+	return CurrContext && CurrContext->Initialized && CurrContext->WithinFrameScope;
 }
 
 ImGuiKey ImGui::ConvertKey(const FKey& Key)
