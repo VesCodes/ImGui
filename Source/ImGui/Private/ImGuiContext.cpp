@@ -273,11 +273,10 @@ void FImGuiContext::Initialize()
 	Context = ImGui::CreateContext();
 	PlotContext = ImPlot::CreateContext();
 
-	Context->IO.UserData = this;
-
-	ImGui::FScopedContextSwitcher ContextSwitcher(AsShared());
+	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGuiIO& IO = ImGui::GetIO();
+	IO.UserData = this;
 
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
@@ -375,7 +374,7 @@ FImGuiContext::operator ImPlotContext*() const
 
 void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics) const
 {
-	ImGui::FScopedContextSwitcher ContextSwitcher(AsShared());
+	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGuiPlatformIO& PlatformIO = ImGui::GetPlatformIO();
 	PlatformIO.Monitors.resize(0);
@@ -402,7 +401,7 @@ void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetric
 
 void FImGuiContext::OnBeginFrame()
 {
-	ImGui::FScopedContextSwitcher ContextSwitcher(AsShared());
+	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGuiIO& IO = ImGui::GetIO();
 
@@ -434,7 +433,7 @@ void FImGuiContext::OnBeginFrame()
 
 void FImGuiContext::OnEndFrame() const
 {
-	ImGui::FScopedContextSwitcher ContextSwitcher(AsShared());
+	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGui::Render();
 	ImGui_RenderWindow(ImGui::GetMainViewport(), nullptr);

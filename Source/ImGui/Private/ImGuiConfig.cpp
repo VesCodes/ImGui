@@ -19,12 +19,12 @@ THIRD_PARTY_INCLUDES_END
 #include "ImGuiContext.h"
 #include "ImGuiModule.h"
 
-ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const int32 PieInstance)
-	: FScopedContextSwitcher(FImGuiModule::Get().FindOrCreateContext(PieInstance))
+ImGui::FScopedContext::FScopedContext(const int32 PieInstance)
+	: FScopedContext(FImGuiModule::Get().FindOrCreateContext(PieInstance))
 {
 }
 
-ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const TSharedPtr<const FImGuiContext>& InContext)
+ImGui::FScopedContext::FScopedContext(const TSharedPtr<const FImGuiContext>& InContext)
 	: Context(InContext)
 {
 	PrevContext = GetCurrentContext();
@@ -42,13 +42,13 @@ ImGui::FScopedContextSwitcher::FScopedContextSwitcher(const TSharedPtr<const FIm
 	}
 }
 
-ImGui::FScopedContextSwitcher::~FScopedContextSwitcher()
+ImGui::FScopedContext::~FScopedContext()
 {
 	SetCurrentContext(PrevContext);
 	ImPlot::SetCurrentContext(PrevPlotContext);
 }
 
-ImGui::FScopedContextSwitcher::operator bool() const
+ImGui::FScopedContext::operator bool() const
 {
 	const ImGuiContext* CurrContext = GetCurrentContext();
 	return CurrContext && CurrContext->Initialized && CurrContext->WithinFrameScope;

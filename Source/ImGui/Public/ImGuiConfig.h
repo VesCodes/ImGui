@@ -41,20 +41,20 @@ struct FKey;
 
 namespace ImGui
 {
-	/// Helper to safely switch ImGui contexts in the current scope; in most cases you
-	/// should use the default constructor to switch to the appropriate PIE context:
+	/// Helper to safely scope ImGui drawing to a specific context; in most cases you should
+	/// use the default constructor to switch to the current game, editor, or PIE context:
 	/// @code
-	///	ImGui::FScopedContextSwitcher ContextSwitcher;
-	///	if (ContextSwitcher)
+	///	ImGui::FScopedContext ScopedContext;
+	///	if (ScopedContext)
 	///	{
 	///		ImGui::ShowDemoWindow();
 	///	}
 	/// @endcode
-	struct IMGUI_API FScopedContextSwitcher
+	struct IMGUI_API FScopedContext
 	{
-		UE_NODISCARD_CTOR explicit FScopedContextSwitcher(const int32 PieInstance = GPlayInEditorID);
-		UE_NODISCARD_CTOR explicit FScopedContextSwitcher(const TSharedPtr<const FImGuiContext>& InContext);
-		~FScopedContextSwitcher();
+		UE_NODISCARD_CTOR explicit FScopedContext(const int32 PieInstance = GPlayInEditorID);
+		UE_NODISCARD_CTOR explicit FScopedContext(const TSharedPtr<const FImGuiContext>& InContext);
+		~FScopedContext();
 
 		/// Returns true if the current ImGui context is ready for use
 		explicit operator bool() const;

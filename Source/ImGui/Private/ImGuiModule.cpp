@@ -74,7 +74,7 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForWindow(const TSharedRef<
 
 	TSharedPtr<FImGuiContext> Context = Overlay->GetContext();
 
-	ImGui::FScopedContextSwitcher ContextSwitcher(Context);
+	ImGui::FScopedContext ScopedContext(Context);
 
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
 	if (ViewportData)
@@ -98,7 +98,7 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForViewport(UGameViewportCl
 
 	TSharedPtr<FImGuiContext> Context = Overlay->GetContext();
 
-	ImGui::FScopedContextSwitcher ContextSwitcher(Context);
+	ImGui::FScopedContext ScopedContext(Context);
 
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
 	if (ViewportData)

@@ -38,7 +38,7 @@ public:
 
 	virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> SlateCursor) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -111,7 +111,7 @@ public:
 
 	virtual bool HandleKeyDownEvent(FSlateApplication& SlateApp, const FKeyEvent& Event) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -128,7 +128,7 @@ public:
 
 	virtual bool HandleKeyUpEvent(FSlateApplication& SlateApp, const FKeyEvent& Event) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -145,7 +145,7 @@ public:
 
 	virtual bool HandleAnalogInputEvent(FSlateApplication& SlateApp, const FAnalogInputEvent& Event) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -157,7 +157,7 @@ public:
 
 	virtual bool HandleMouseMoveEvent(FSlateApplication& SlateApp, const FPointerEvent& Event) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -175,7 +175,7 @@ public:
 
 	virtual bool HandleMouseButtonDownEvent(FSlateApplication& SlateApp, const FPointerEvent& Event) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -198,7 +198,7 @@ public:
 
 	virtual bool HandleMouseButtonUpEvent(FSlateApplication& SlateApp, const FPointerEvent& Event) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -227,7 +227,7 @@ public:
 
 	virtual bool HandleMouseWheelOrGestureEvent(FSlateApplication& SlateApp, const FPointerEvent& Event, const FPointerEvent* GestureEvent) override
 	{
-		ImGui::FScopedContextSwitcher ContextSwitcher(Owner->GetContext());
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
 
@@ -338,7 +338,7 @@ bool SImGuiOverlay::SupportsKeyboardFocus() const
 
 FReply SImGuiOverlay::OnKeyChar(const FGeometry& MyGeometry, const FCharacterEvent& Event)
 {
-	ImGui::FScopedContextSwitcher ContextSwitcher(Context);
+	ImGui::FScopedContext ScopedContext(Context);
 
 	ImGuiIO& IO = ImGui::GetIO();
 
