@@ -31,7 +31,11 @@
 	operator FLinearColor() const { return FLinearColor(x, y, z, w); } \
 	constexpr ImVec4(const FLinearColor& C) : x(C.R), y(C.G), z(C.B), w(C.A) {}
 
+#if WITH_ENGINE
 #define ImTextureID class UTexture2D*
+#else
+#define ImTextureID struct FSlateBrush*
+#endif
 
 class FImGuiContext;
 struct ImGuiContext;

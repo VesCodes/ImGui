@@ -1,7 +1,10 @@
 #include "ImGuiConfig.h"
 
 #include <InputCoreTypes.h>
+
+#if WITH_ENGINE
 #include <Engine/Texture2D.h>
+#endif
 
 // ReSharper disable CppUnusedIncludeDirective
 THIRD_PARTY_INCLUDES_START
@@ -20,7 +23,7 @@ THIRD_PARTY_INCLUDES_END
 #include "ImGuiModule.h"
 
 ImGui::FScopedContext::FScopedContext(const int32 PieInstance)
-	: FScopedContext(FImGuiModule::Get().FindOrCreateContext(PieInstance))
+	: FScopedContext(FImGuiModule::Get().FindOrCreateContextForSession(PieInstance))
 {
 }
 

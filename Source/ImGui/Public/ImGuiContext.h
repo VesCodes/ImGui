@@ -1,8 +1,11 @@
 #pragma once
 
-#include <Engine/Texture2D.h> // TStrongObjectPtr doesn't like forward declared types
 #include <Templates/SharedPointer.h>
+
+#if WITH_ENGINE
+#include <Engine/Texture2D.h> // TStrongObjectPtr doesn't like forward declared types
 #include <UObject/StrongObjectPtr.h>
+#endif
 
 class SWindow;
 class SImGuiOverlay;
@@ -41,8 +44,10 @@ private:
 	void Initialize();
 
 	void OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics) const;
-	void OnBeginFrame();
-	void OnEndFrame() const;
+	bool OnTick(float DeltaTime);
+
+	void BeginFrame();
+	void EndFrame() const;
 
 	ImGuiContext* Context = nullptr;
 	ImPlotContext* PlotContext = nullptr;
@@ -50,5 +55,11 @@ private:
 	char IniFilenameAnsi[1024] = {};
 	char LogFilenameAnsi[1024] = {};
 
+	FTSTicker::FDelegateHandle TickHandle;
+
+#if WITH_ENGINE
 	TStrongObjectPtr<UTexture2D> FontAtlasTexturePtr = nullptr;
+#else
+	TSharedPtr<FSlateBrush> FontAtlasTexturePtr = nullptr;
+#endif
 };

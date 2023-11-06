@@ -1,10 +1,11 @@
 ﻿#include "ImGuiModule.h"
 
+#include <Widgets/SWindow.h>
+
+#if WITH_ENGINE
 #include <Engine/Engine.h>
 #include <Engine/GameViewportClient.h>
-#include <HAL/LowLevelMemTracker.h>
-#include <HAL/UnrealMemory.h>
-#include <Widgets/SWindow.h>
+#endif
 
 #if WITH_EDITOR
 #include <Interfaces/IMainFrameModule.h>
@@ -13,31 +14,15 @@
 #include "ImGuiContext.h"
 #include "SImGuiOverlay.h"
 
-static void* ImGui_MemAlloc(size_t Size, void* UserData)
-{
-	LLM_SCOPE_BYNAME(TEXT("ImGui"));
-	return FMemory::Malloc(Size);
-}
-
-static void ImGui_MemFree(void* Ptr, void* UserData)
-{
-	FMemory::Free(Ptr);
-}
-
-void FImGuiModule::StartupModule()
-{
-	ImGui::SetAllocatorFunctions(ImGui_MemAlloc, ImGui_MemFree);
-}
-
 FImGuiModule& FImGuiModule::Get()
 {
 	static FImGuiModule& Module = FModuleManager::LoadModuleChecked<FImGuiModule>(UE_MODULE_NAME);
 	return Module;
 }
 
-TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateContext(const int32 PieInstance)
+TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateContextForSession(const int32 PieInstance)
 {
-	TSharedPtr<FImGuiContext> Context = Contexts.FindRef(PieInstance).Pin();
+	TSharedPtr<FImGuiContext> Context = SessionContexts.FindRef(PieInstance).Pin();
 	if (!Context.IsValid())
 	{
 #if WITH_EDITOR
@@ -48,19 +33,21 @@ TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateContext(const int32 PieInsta
 			if (MainFrameWindow.IsValid())
 			{
 				Context = CreateContextForWindow(MainFrameWindow.ToSharedRef());
-				Contexts.Add(PieInstance, Context);
+				SessionContexts.Add(PieInstance, Context);
 			}
 		}
 		else
 #endif
 		{
+#if WITH_ENGINE
 			const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PieInstance);
 			UGameViewportClient* GameViewport = WorldContext ? WorldContext->GameViewport : GEngine->GameViewport;
 			if (IsValid(GameViewport))
 			{
 				Context = CreateContextForViewport(GameViewport);
-				Contexts.Add(PieInstance, Context);
+				SessionContexts.Add(PieInstance, Context);
 			}
+#endif
 		}
 	}
 
@@ -88,6 +75,7 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForWindow(const TSharedRef<
 
 TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForViewport(UGameViewportClient* GameViewport)
 {
+#if WITH_ENGINE
 	if (!IsValid(GameViewport))
 	{
 		return nullptr;
@@ -108,6 +96,9 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForViewport(UGameViewportCl
 	}
 
 	return Context;
+#else
+	return nullptr;
+#endif
 }
 
 IMPLEMENT_MODULE(FImGuiModule, ImGui);

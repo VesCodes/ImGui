@@ -16,12 +16,19 @@ public class ImGui : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new[]
 		{
 			"ApplicationCore",
-			"CoreUObject",
-			"Engine",
 			"InputCore",
 			"Slate",
 			"SlateCore"
 		});
+
+		if (Target.bCompileAgainstEngine)
+		{
+			PrivateDependencyModuleNames.AddRange(new[]
+			{
+				"CoreUObject",
+				"Engine"
+			});
+		}
 
 		if (Target.bBuildEditor)
 		{

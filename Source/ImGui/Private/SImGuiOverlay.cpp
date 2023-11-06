@@ -1,7 +1,10 @@
 ﻿#include "SImGuiOverlay.h"
 
-#include <Engine/Texture2D.h>
 #include <Framework/Application/SlateApplication.h>
+
+#if WITH_ENGINE
+#include <Engine/Texture2D.h>
+#endif
 
 #include "ImGuiContext.h"
 
@@ -294,6 +297,7 @@ int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGe
 			TArray VerticesSlice(Vertices.GetData() + DrawCmd.VtxOffset, Vertices.Num() - DrawCmd.VtxOffset);
 			TArray IndicesSlice(Indices.GetData() + DrawCmd.IdxOffset, DrawCmd.ElemCount);
 
+#if WITH_ENGINE
 			UTexture2D* Texture = DrawCmd.GetTexID();
 			if (TextureBrush.GetResourceObject() != Texture)
 			{
@@ -313,6 +317,20 @@ int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGe
 					TextureBrush.DrawAs = ESlateBrushDrawType::NoDrawType;
 				}
 			}
+#else
+			FSlateBrush* Texture = DrawCmd.GetTexID();
+			if (Texture)
+			{
+				TextureBrush = *Texture;
+			}
+			else
+			{
+				TextureBrush.ImageSize.X = 0;
+				TextureBrush.ImageSize.Y = 0;
+				TextureBrush.ImageType = ESlateBrushImageType::NoImage;
+				TextureBrush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			}
+#endif
 
 			FSlateRect ClipRect(DrawCmd.ClipRect.x, DrawCmd.ClipRect.y, DrawCmd.ClipRect.z, DrawCmd.ClipRect.w);
 			ClipRect = TransformRect(Transform, ClipRect);

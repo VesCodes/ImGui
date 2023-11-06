@@ -1,8 +1,13 @@
 #include "ImGuiContext.h"
 
-#include <TextureResource.h>
 #include <Framework/Application/SlateApplication.h>
+#include <HAL/LowLevelMemTracker.h>
+#include <HAL/UnrealMemory.h>
 #include <Widgets/SWindow.h>
+
+#if WITH_ENGINE
+#include <TextureResource.h>
+#endif
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -27,6 +32,17 @@ FImGuiViewportData* FImGuiViewportData::GetOrCreate(ImGuiViewport* Viewport)
 	return ViewportData;
 }
 
+static void* ImGui_MemAlloc(size_t Size, void* UserData)
+{
+	LLM_SCOPE_BYNAME(TEXT("ImGui"));
+	return FMemory::Malloc(Size);
+}
+
+static void ImGui_MemFree(void* Ptr, void* UserData)
+{
+	FMemory::Free(Ptr);
+}
+
 static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 {
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(Viewport);
@@ -40,13 +56,13 @@ static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 
 		// #TODO(Ves): Still blits a black background in the window frame :(
 		static FWindowStyle WindowStyle = FWindowStyle()
-		                                  .SetActiveTitleBrush(FSlateNoResource())
-		                                  .SetInactiveTitleBrush(FSlateNoResource())
-		                                  .SetFlashTitleBrush(FSlateNoResource())
-		                                  .SetOutlineBrush(FSlateNoResource())
-		                                  .SetBorderBrush(FSlateNoResource())
-		                                  .SetBackgroundBrush(FSlateNoResource())
-		                                  .SetChildBackgroundBrush(FSlateNoResource());
+			.SetActiveTitleBrush(FSlateNoResource())
+			.SetInactiveTitleBrush(FSlateNoResource())
+			.SetFlashTitleBrush(FSlateNoResource())
+			.SetOutlineBrush(FSlateNoResource())
+			.SetBorderBrush(FSlateNoResource())
+			.SetBackgroundBrush(FSlateNoResource())
+			.SetChildBackgroundBrush(FSlateNoResource());
 
 		const TSharedRef<SWindow> Window =
 			SAssignNew(ViewportData->Window, SWindow)
@@ -268,6 +284,8 @@ TSharedPtr<FImGuiContext> FImGuiContext::Get(ImGuiContext* Context)
 
 void FImGuiContext::Initialize()
 {
+	ImGui::SetAllocatorFunctions(ImGui_MemAlloc, ImGui_MemFree);
+
 	IMGUI_CHECKVERSION();
 
 	Context = ImGui::CreateContext();
@@ -282,7 +300,6 @@ void FImGuiContext::Initialize()
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
 	IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	IO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 	IO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
@@ -319,6 +336,9 @@ void FImGuiContext::Initialize()
 
 	if (FSlateApplication::IsInitialized())
 	{
+		// Enable multi-viewports support for Slate applications
+		IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
 		if (const TSharedPtr<GenericApplication> PlatformApplication = FSlateApplication::Get().GetPlatformApplication())
 		{
 			FDisplayMetrics DisplayMetrics;
@@ -328,18 +348,16 @@ void FImGuiContext::Initialize()
 		}
 	}
 
-	FCoreDelegates::OnBeginFrame.AddSP(this, &FImGuiContext::OnBeginFrame);
-	FCoreDelegates::OnEndFrame.AddSP(this, &FImGuiContext::OnEndFrame);
+	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FImGuiContext::OnTick), 0);
 
 	// Create viewport data to kickstart the frame
 	FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
-	OnBeginFrame();
+	BeginFrame();
 }
 
 FImGuiContext::~FImGuiContext()
 {
-	FCoreDelegates::OnBeginFrame.RemoveAll(this);
-	FCoreDelegates::OnEndFrame.RemoveAll(this);
+	FTSTicker::RemoveTicker(TickHandle);
 
 	if (FSlateApplication::IsInitialized())
 	{
@@ -399,8 +417,21 @@ void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetric
 	}
 }
 
-void FImGuiContext::OnBeginFrame()
+bool FImGuiContext::OnTick(float DeltaTime)
 {
+	EndFrame();
+	BeginFrame();
+
+	return true;
+}
+
+void FImGuiContext::BeginFrame()
+{
+	if (Context->WithinFrameScope)
+	{
+		return;
+	}
+
 	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGuiIO& IO = ImGui::GetIO();
@@ -414,6 +445,7 @@ void FImGuiContext::OnBeginFrame()
 		int32 TextureWidth, TextureHeight, BytesPerPixel;
 		IO.Fonts->GetTexDataAsRGBA32(&TextureDataRaw, &TextureWidth, &TextureHeight, &BytesPerPixel);
 
+#if WITH_ENGINE
 		UTexture2D* FontAtlasTexture = UTexture2D::CreateTransient(TextureWidth, TextureHeight, PF_R8G8B8A8, TEXT("ImGuiFontAtlas"));
 		FontAtlasTexture->Filter = TF_Bilinear;
 		FontAtlasTexture->AddressX = TA_Wrap;
@@ -424,15 +456,26 @@ void FImGuiContext::OnBeginFrame()
 		FontAtlasTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
 		FontAtlasTexture->UpdateResource();
 
-		IO.Fonts->SetTexID(FontAtlasTexture);
 		FontAtlasTexturePtr.Reset(FontAtlasTexture);
+#else
+		FontAtlasTexturePtr = FSlateDynamicImageBrush::CreateWithImageData(
+			TEXT("ImGuiFontAtlas"), FVector2D(TextureWidth, TextureHeight),
+			TArray(TextureDataRaw, TextureWidth * TextureHeight * BytesPerPixel));
+#endif
+
+		IO.Fonts->SetTexID(FontAtlasTexturePtr.Get());
 	}
 
 	ImGui::NewFrame();
 }
 
-void FImGuiContext::OnEndFrame() const
+void FImGuiContext::EndFrame() const
 {
+	if (!Context->WithinFrameScope)
+	{
+		return;
+	}
+
 	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGui::Render();
