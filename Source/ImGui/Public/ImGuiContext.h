@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Containers/Ticker.h>
 #include <Templates/SharedPointer.h>
 
 #if WITH_ENGINE

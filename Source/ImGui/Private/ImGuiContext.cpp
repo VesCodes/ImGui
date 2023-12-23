@@ -307,11 +307,14 @@ void FImGuiContext::Initialize()
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-	const FString IniFilename = FPaths::GeneratedConfigDir() / FPlatformProperties::PlatformName() / TEXT("ImGui.ini");
+	// Ensure each PIE session has a uniquely identifiable context
+	const FString ContextName = (GPlayInEditorID > 0 ? FString::Printf(TEXT("ImGui_%d"), static_cast<int32>(GPlayInEditorID)) : TEXT("ImGui"));
+
+	const FString IniFilename = FPaths::GeneratedConfigDir() / FPlatformProperties::PlatformName() / ContextName + TEXT(".ini");
 	FCStringAnsi::Strncpy(IniFilenameAnsi, TCHAR_TO_ANSI(*IniFilename), UE_ARRAY_COUNT(IniFilenameAnsi));
 	IO.IniFilename = IniFilenameAnsi;
 
-	const FString LogFilename = FPaths::ProjectLogDir() / (GPlayInEditorID != INDEX_NONE ? FString::Printf(TEXT("ImGui_%d.log"), static_cast<int32>(GPlayInEditorID)) : TEXT("ImGui.log"));
+	const FString LogFilename = FPaths::ProjectLogDir() / ContextName + TEXT(".log");
 	FCStringAnsi::Strncpy(LogFilenameAnsi, TCHAR_TO_ANSI(*LogFilename), UE_ARRAY_COUNT(LogFilenameAnsi));
 	IO.LogFilename = LogFilenameAnsi;
 
@@ -348,11 +351,10 @@ void FImGuiContext::Initialize()
 		}
 	}
 
-	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FImGuiContext::OnTick), 0);
-
-	// Create viewport data to kickstart the frame
+	// Ensure main viewport data is created ahead of time
 	FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
-	BeginFrame();
+
+	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FImGuiContext::OnTick));
 }
 
 FImGuiContext::~FImGuiContext()
