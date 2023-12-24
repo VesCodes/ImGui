@@ -3,9 +3,14 @@
 #if NETIMGUI_ENABLED && defined(__UNREAL__)
 
 #include "CoreMinimal.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Misc/OutputDeviceRedirector.h"
 #include "SocketSubsystem.h"
 #include "Sockets.h"
+#include "HAL/PlatformProcess.h"
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 2
+#include "IPAddressAsyncResolve.h"
+#endif
 
 namespace NetImgui { namespace Internal { namespace Network 
 {
@@ -41,7 +46,7 @@ SocketInfo* Connect(const char* ServerHost, uint32_t ServerPort)
 	ISocketSubsystem* SocketSubSystem		= ISocketSubsystem::Get();
 	auto ResolveInfo						= SocketSubSystem->GetHostByName(ServerHost);
 	while( !ResolveInfo->IsComplete() )
-		FPlatformProcess::Sleep(0.1);
+		FPlatformProcess::YieldThread();
 	
 	if (ResolveInfo->GetErrorCode() == 0)
 	{

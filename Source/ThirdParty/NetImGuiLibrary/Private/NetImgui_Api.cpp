@@ -680,7 +680,7 @@ bool ProcessInputData(Client::ClientInfo& client)
 		
 		size_t keyCount(1);
 		uint16_t character;
-		io.ClearInputCharacters();
+		io.ClearInputKeys();
 		client.mPendingKeyIn.ReadData(&character, keyCount);
 		while (keyCount > 0){
 			io.AddInputCharacter(character);
