@@ -55,7 +55,7 @@ namespace ImGui
 	/// @endcode
 	struct IMGUI_API FScopedContext
 	{
-		UE_NODISCARD_CTOR explicit FScopedContext(const int32 PieInstance = GPlayInEditorID);
+		UE_NODISCARD_CTOR explicit FScopedContext(const int32 PIEInstance = GPlayInEditorID);
 		UE_NODISCARD_CTOR explicit FScopedContext(const TSharedPtr<const FImGuiContext>& InContext);
 		~FScopedContext();
 

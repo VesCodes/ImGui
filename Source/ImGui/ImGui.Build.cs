@@ -10,7 +10,8 @@ public class ImGui : ModuleRules
 		{
 			"Core",
 			"ImGuiLibrary",
-			"ImPlotLibrary"
+			"ImPlotLibrary",
+			"NetImGuiLibrary"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new[]
@@ -32,10 +33,18 @@ public class ImGui : ModuleRules
 
 		if (Target.bBuildEditor)
 		{
-			PrivateDependencyModuleNames.Add("MainFrame");
+			PrivateDependencyModuleNames.AddRange(new[]
+			{
+				"MainFrame",
+				"UnrealEd"
+			});
 		}
 
-		PublicDefinitions.Add("IMGUI_USER_CONFIG=\"ImGuiConfig.h\"");
-		PublicDefinitions.Add("IMPLOT_API=IMGUI_API");
+		PublicDefinitions.AddRange(new[]
+		{
+			"IMGUI_USER_CONFIG=\"ImGuiConfig.h\"",
+			"IMPLOT_API=IMGUI_API",
+			"NETIMGUI_API=IMGUI_API"
+		});
 	}
 }

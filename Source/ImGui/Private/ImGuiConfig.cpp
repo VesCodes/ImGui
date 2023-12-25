@@ -22,8 +22,8 @@ THIRD_PARTY_INCLUDES_END
 #include "ImGuiContext.h"
 #include "ImGuiModule.h"
 
-ImGui::FScopedContext::FScopedContext(const int32 PieInstance)
-	: FScopedContext(FImGuiModule::Get().FindOrCreateContextForSession(PieInstance))
+ImGui::FScopedContext::FScopedContext(const int32 PIEInstance)
+	: FScopedContext(FImGuiModule::Get().FindOrCreateSessionContext(PIEInstance))
 {
 }
 

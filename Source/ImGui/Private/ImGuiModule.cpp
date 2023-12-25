@@ -8,11 +8,28 @@
 #endif
 
 #if WITH_EDITOR
+#include <Editor.h>
 #include <Interfaces/IMainFrameModule.h>
 #endif
 
 #include "ImGuiContext.h"
 #include "SImGuiOverlay.h"
+
+void FImGuiModule::StartupModule()
+{
+#if WITH_EDITOR
+	FEditorDelegates::EndPIE.AddRaw(this, &FImGuiModule::OnEndPIE);
+#endif
+}
+
+void FImGuiModule::ShutdownModule()
+{
+#if WITH_EDITOR
+	FEditorDelegates::EndPIE.RemoveAll(this);
+#endif
+
+	SessionContexts.Reset();
+}
 
 FImGuiModule& FImGuiModule::Get()
 {
@@ -20,47 +37,73 @@ FImGuiModule& FImGuiModule::Get()
 	return Module;
 }
 
-TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateContextForSession(const int32 PieInstance)
+TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateSessionContext(const int32 PIEInstance)
 {
-	TSharedPtr<FImGuiContext> Context = SessionContexts.FindRef(PieInstance).Pin();
+	TSharedPtr<FImGuiContext> Context = SessionContexts.FindRef(PIEInstance);
 	if (!Context.IsValid())
 	{
+		FString Host;
+		const bool bShouldConnect = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiHost="), Host);
+
+		uint16 Port = bShouldConnect ? 8888 : (8889 + FMath::Max(PIEInstance, 0));
+		bool bShouldListen = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiPort="), Port);
+
 #if WITH_EDITOR
-		if (GIsEditor && PieInstance == INDEX_NONE)
+		if (GIsEditor && PIEInstance == INDEX_NONE)
 		{
 			const IMainFrameModule* MainFrameModule = FModuleManager::GetModulePtr<IMainFrameModule>("MainFrame");
 			const TSharedPtr<SWindow> MainFrameWindow = MainFrameModule ? MainFrameModule->GetParentWindow() : nullptr;
 			if (MainFrameWindow.IsValid())
 			{
-				Context = CreateContextForWindow(MainFrameWindow.ToSharedRef());
-				SessionContexts.Add(PieInstance, Context);
+				Context = CreateWindowContext(MainFrameWindow.ToSharedRef());
 			}
 		}
 		else
 #endif
 		{
 #if WITH_ENGINE
-			const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PieInstance);
+			const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PIEInstance);
 			UGameViewportClient* GameViewport = WorldContext ? WorldContext->GameViewport : GEngine->GameViewport;
 			if (IsValid(GameViewport))
 			{
-				Context = CreateContextForViewport(GameViewport);
-				SessionContexts.Add(PieInstance, Context);
+				Context = CreateViewportContext(GameViewport);
+			}
+			else
+			{
+				Context = FImGuiContext::Create();
+				bShouldListen = true;
 			}
 #endif
+		}
+
+		if (Context.IsValid())
+		{
+			if (bShouldConnect && !Context->Connect(Host, Port) || bShouldListen && !Context->Listen(Port))
+			{
+				Context.Reset();
+				Context = nullptr;
+			}
+			else
+			{
+				SessionContexts.Add(PIEInstance, Context);
+			}
 		}
 	}
 
 	return Context;
 }
 
-TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForWindow(const TSharedRef<SWindow>& Window)
+void FImGuiModule::OnEndPIE(bool bIsSimulating)
+{
+	SessionContexts.Reset();
+}
+
+TSharedPtr<FImGuiContext> FImGuiModule::CreateWindowContext(const TSharedRef<SWindow>& Window)
 {
 	const TSharedRef<SImGuiOverlay> Overlay = SNew(SImGuiOverlay);
 	Window->AddOverlaySlot(TNumericLimits<int32>::Max())[Overlay];
 
 	TSharedPtr<FImGuiContext> Context = Overlay->GetContext();
-
 	ImGui::FScopedContext ScopedContext(Context);
 
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
@@ -73,7 +116,7 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForWindow(const TSharedRef<
 	return Context;
 }
 
-TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForViewport(UGameViewportClient* GameViewport)
+TSharedPtr<FImGuiContext> FImGuiModule::CreateViewportContext(UGameViewportClient* GameViewport)
 {
 #if WITH_ENGINE
 	if (!IsValid(GameViewport))
@@ -85,7 +128,6 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateContextForViewport(UGameViewportCl
 	GameViewport->AddViewportWidgetContent(Overlay, TNumericLimits<int32>::Max());
 
 	TSharedPtr<FImGuiContext> Context = Overlay->GetContext();
-
 	ImGui::FScopedContext ScopedContext(Context);
 
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());

@@ -9,9 +9,13 @@
 #include <TextureResource.h>
 #endif
 
+THIRD_PARTY_INCLUDES_START
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <implot.h>
+#define NETIMGUI_IMPLEMENTATION
+#include <NetImGui_Api.h>
+THIRD_PARTY_INCLUDES_END
 
 #include "SImGuiOverlay.h"
 
@@ -56,13 +60,13 @@ static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 
 		// #TODO(Ves): Still blits a black background in the window frame :(
 		static FWindowStyle WindowStyle = FWindowStyle()
-			.SetActiveTitleBrush(FSlateNoResource())
-			.SetInactiveTitleBrush(FSlateNoResource())
-			.SetFlashTitleBrush(FSlateNoResource())
-			.SetOutlineBrush(FSlateNoResource())
-			.SetBorderBrush(FSlateNoResource())
-			.SetBackgroundBrush(FSlateNoResource())
-			.SetChildBackgroundBrush(FSlateNoResource());
+		                                  .SetActiveTitleBrush(FSlateNoResource())
+		                                  .SetInactiveTitleBrush(FSlateNoResource())
+		                                  .SetFlashTitleBrush(FSlateNoResource())
+		                                  .SetOutlineBrush(FSlateNoResource())
+		                                  .SetBorderBrush(FSlateNoResource())
+		                                  .SetBackgroundBrush(FSlateNoResource())
+		                                  .SetChildBackgroundBrush(FSlateNoResource());
 
 		const TSharedRef<SWindow> Window =
 			SAssignNew(ViewportData->Window, SWindow)
@@ -271,11 +275,11 @@ TSharedRef<FImGuiContext> FImGuiContext::Create()
 	return Context;
 }
 
-TSharedPtr<FImGuiContext> FImGuiContext::Get(ImGuiContext* Context)
+TSharedPtr<FImGuiContext> FImGuiContext::Get(const ImGuiContext* Context)
 {
 	if (Context && Context->IO.UserData)
 	{
-		// #TODO(Ves): Should probably track managed contexts internally, this is dodgy
+		// Expects that the provided context is owned by a live FImGuiContext
 		return static_cast<FImGuiContext*>(Context->IO.UserData)->AsShared();
 	}
 
@@ -292,6 +296,8 @@ void FImGuiContext::Initialize()
 	PlotContext = ImPlot::CreateContext();
 
 	ImGui::FScopedContext ScopedContext(AsShared());
+
+	NetImgui::Startup();
 
 	ImGuiIO& IO = ImGui::GetIO();
 	IO.UserData = this;
@@ -369,6 +375,8 @@ FImGuiContext::~FImGuiContext()
 		}
 	}
 
+	Disconnect();
+
 	if (PlotContext)
 	{
 		ImPlot::DestroyContext(PlotContext);
@@ -379,6 +387,51 @@ FImGuiContext::~FImGuiContext()
 	{
 		ImGui::DestroyContext(Context);
 		Context = nullptr;
+	}
+}
+
+bool FImGuiContext::Listen(int16 Port)
+{
+	ImGui::FScopedContext ScopedContext(AsShared());
+
+	TAnsiStringBuilder<128> ClientName;
+	ClientName << FApp::GetProjectName();
+	if (GPlayInEditorID > 0)
+	{
+		ClientName.Appendf(" (%d)", GPlayInEditorID);
+	}
+
+	// #TODO(Ves): [24/12/23] Returns false but is actually successful?
+	NetImgui::ConnectFromApp(ClientName.ToString(), Port);
+	bIsRemote = true;
+
+	return true;
+}
+
+bool FImGuiContext::Connect(const FString& Host, int16 Port)
+{
+	ImGui::FScopedContext ScopedContext(AsShared());
+
+	TAnsiStringBuilder<128> ClientName;
+	ClientName << FApp::GetProjectName();
+	if (GPlayInEditorID > 0)
+	{
+		ClientName.Appendf(" (%d)", GPlayInEditorID);
+	}
+
+	// #TODO(Ves): [24/12/23] Returns false but is actually successful?
+	NetImgui::ConnectToApp(ClientName.ToString(), TCHAR_TO_ANSI(*Host), Port);
+	bIsRemote = true;
+
+	return true;
+}
+
+void FImGuiContext::Disconnect()
+{
+	if (bIsRemote)
+	{
+		NetImgui::Disconnect();
+		bIsRemote = false;
 	}
 }
 
@@ -429,7 +482,7 @@ bool FImGuiContext::OnTick(float DeltaTime)
 
 void FImGuiContext::BeginFrame()
 {
-	if (Context->WithinFrameScope)
+	if (Context->WithinFrameScope || (bIsRemote && !NetImgui::IsConnected()))
 	{
 		return;
 	}
@@ -481,8 +534,11 @@ void FImGuiContext::EndFrame() const
 	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGui::Render();
-	ImGui_RenderWindow(ImGui::GetMainViewport(), nullptr);
-
 	ImGui::UpdatePlatformWindows();
-	ImGui::RenderPlatformWindowsDefault();
+
+	if (!bIsRemote)
+	{
+		ImGui_RenderWindow(ImGui::GetMainViewport(), nullptr);
+		ImGui::RenderPlatformWindowsDefault();
+	}
 }

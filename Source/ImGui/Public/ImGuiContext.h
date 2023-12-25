@@ -31,9 +31,18 @@ public:
 	static TSharedRef<FImGuiContext> Create();
 
 	/// Returns an existing managed ImGui context
-	static TSharedPtr<FImGuiContext> Get(ImGuiContext* Context);
+	static TSharedPtr<FImGuiContext> Get(const ImGuiContext* Context);
 
 	~FImGuiContext();
+
+	/// Listens for remote connections
+	bool Listen(int16 Port);
+
+	/// Connects to a remote host
+	bool Connect(const FString& Host, int16 Port);
+
+	/// Closes all remote connections
+	void Disconnect();
 
 	/// Implicit conversion operator for the underlying ImGui context
 	operator ImGuiContext*() const;
@@ -55,6 +64,7 @@ private:
 
 	char IniFilenameAnsi[1024] = {};
 	char LogFilenameAnsi[1024] = {};
+	bool bIsRemote = false;
 
 	FTSTicker::FDelegateHandle TickHandle;
 
