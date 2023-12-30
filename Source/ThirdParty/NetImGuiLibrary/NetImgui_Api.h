@@ -4,12 +4,12 @@
 //! @Name		: NetImgui
 //=================================================================================================
 //! @author		: Sammy Fatnassi
-//! @date		: 2023/05/04
-//!	@version	: v1.9
+//! @date		: 2023/12/30
+//!	@version	: v1.10.0
 //! @Details	: For integration info : https://github.com/sammyfreg/netImgui/wiki
 //=================================================================================================
-#define NETIMGUI_VERSION		"1.9"	// Version Release 1.9
-#define NETIMGUI_VERSION_NUM	10900
+#define NETIMGUI_VERSION		"1.10.0"	// Version 1.10 Release
+#define NETIMGUI_VERSION_NUM	11000
 
 
 
@@ -108,9 +108,16 @@ namespace NetImgui
 //=================================================================================================
 // List of texture format supported
 //=================================================================================================
-enum eTexFormat { 
-	kTexFmtA8, 
-	kTexFmtRGBA8, 
+enum eTexFormat {
+	kTexFmtA8,
+	kTexFmtRGBA8,
+	
+	// Support of 'user defined' texture format.
+	// Implementation must be added on both client and Server code. 
+	// Search for TEXTURE_CUSTOM_SAMPLE for example implementation.
+	kTexFmtCustom,
+	
+	//
 	kTexFmt_Count,
 	kTexFmt_Invalid=kTexFmt_Count 
 };
@@ -125,9 +132,10 @@ enum eCompressionMode {
 };
 
 //-------------------------------------------------------------------------------------------------
-// Thread start function
+// Function typedefs
 //-------------------------------------------------------------------------------------------------
-typedef void ThreadFunctPtr(void threadedFunction(void* pClientInfo), void* pClientInfo);
+typedef void (*ThreadFunctPtr)(void threadedFunction(void* pClientInfo), void* pClientInfo);
+typedef void (*FontCreateFuncPtr)(float PreviousDPIScale, float NewDPIScale);
 
 //=================================================================================================
 // Initialize the Network Library
@@ -149,15 +157,19 @@ NETIMGUI_API	void				Shutdown();
 // Note:	Start a new communication thread using std::Thread by default, but can receive custom 
 //			thread start function instead (Look at ClientExample 'CustomCommunicationThread').
 //-------------------------------------------------------------------------------------------------
-// clientName		: Client name displayed in the Server's clients list
-// serverHost		: Address of the NetImgui Server application (Ex1: 127.0.0.2, Ex2: localhost)
-// serverPort		: PortID of the NetImgui Server application to connect to
-// clientPort		: PortID this Client should wait for connection from Server application
-// threadFunction	: User provided function to launch new networking thread.
-//					  Use 'DefaultStartCommunicationThread' by default (relying on 'std::thread').
+// clientName			: Client name displayed in the Server's clients list
+// serverHost			: NetImgui Server Application address (Ex1: 127.0.0.2, Ex2: localhost)
+// serverPort			: PortID of the NetImgui Server application to connect to
+// clientPort			: PortID this Client should wait for connection from Server application
+// threadFunction		: User provided function to launch new networking thread.
+//						  Use 'DefaultStartCommunicationThread' by default (uses 'std::thread').
+// fontCreateFunction	: User provided function to call when the Server expect an update of
+//						  the font atlas, because of a monitor DPI change. When left to nullptr,
+//						  uses 'ImGuiIO.FontGlobalScale' instead to increase text size,
+//						  with blurier results.
 //=================================================================================================
-NETIMGUI_API	bool				ConnectToApp(const char* clientName, const char* serverHost, uint32_t serverPort=kDefaultServerPort, ThreadFunctPtr threadFunction=0);
-NETIMGUI_API	bool				ConnectFromApp(const char* clientName, uint32_t clientPort=kDefaultClientPort, ThreadFunctPtr threadFunction=0);
+NETIMGUI_API	bool				ConnectToApp(const char* clientName, const char* serverHost, uint32_t serverPort=kDefaultServerPort, ThreadFunctPtr threadFunction=0, FontCreateFuncPtr FontCreateFunction=0);
+NETIMGUI_API	bool				ConnectFromApp(const char* clientName, uint32_t clientPort=kDefaultClientPort, ThreadFunctPtr threadFunction=0, FontCreateFuncPtr fontCreateFunction=0);
 
 //=================================================================================================
 // Request a disconnect from the NetImguiServer application
@@ -182,7 +194,7 @@ NETIMGUI_API	bool				IsConnectionPending(void);
 NETIMGUI_API	bool				IsDrawing(void);
 
 //=================================================================================================
-// True when we are currently drawinf on the NetImguiServer application
+// True when we are currently drawing on the NetImguiServer application
 // Means that we are between NewFrame() and EndFrame() of drawing for remote application
 //=================================================================================================
 NETIMGUI_API	bool				IsDrawingRemote(void);
@@ -190,8 +202,10 @@ NETIMGUI_API	bool				IsDrawingRemote(void);
 //=================================================================================================
 // Send an updated texture used by imgui, to the NetImguiServer application
 // Note: To remove a texture, set pData to nullptr
+// Note: User needs to provide a valid 'dataSize' when using format 'kTexFmtCustom', 
+//		 can be ignored otherwise
 //=================================================================================================
-NETIMGUI_API	void				SendDataTexture(ImTextureID textureId, void* pData, uint16_t width, uint16_t height, eTexFormat format);
+NETIMGUI_API	void				SendDataTexture(ImTextureID textureId, void* pData, uint16_t width, uint16_t height, eTexFormat format, uint32_t dataSize=0);
 
 //=================================================================================================
 // Start a new Imgui Frame and wait for Draws commands, using ImContext that was active on connect.

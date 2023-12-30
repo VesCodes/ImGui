@@ -375,7 +375,7 @@ FImGuiContext::~FImGuiContext()
 		}
 	}
 
-	Disconnect();
+	NetImgui::Shutdown();
 
 	if (PlotContext)
 	{

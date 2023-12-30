@@ -1,5 +1,7 @@
 #include "NetImgui_Shared.h"
 
+// Tested with Unreal Engine 4.27, 5.0, 5.2
+
 #if NETIMGUI_ENABLED && defined(__UNREAL__)
 
 #include "CoreMinimal.h"
@@ -44,14 +46,15 @@ SocketInfo* Connect(const char* ServerHost, uint32_t ServerPort)
 {
 	SocketInfo* pSocketInfo					= nullptr;
 	ISocketSubsystem* SocketSubSystem		= ISocketSubsystem::Get();
-	auto ResolveInfo						= SocketSubSystem->GetHostByName(ServerHost);
-	while( !ResolveInfo->IsComplete() )
+	auto ResolveInfo						= SocketSubSystem->GetHostByName(ServerHost);	
+	while( !ResolveInfo->IsComplete() ){
 		FPlatformProcess::YieldThread();
-	
+	}
+
 	if (ResolveInfo->GetErrorCode() == 0)
 	{
 		TSharedRef<FInternetAddr> IpAddress	= ResolveInfo->GetResolvedAddress().Clone();
-		IpAddress->SetPort(ServerPort);		
+		IpAddress->SetPort(ServerPort);
 		if (IpAddress->IsValid())
 		{
 			FSocket* pNewSocket				= SocketSubSystem->CreateSocket(NAME_Stream, "netImgui", IpAddress->GetProtocolType());
