@@ -43,10 +43,16 @@ TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateSessionContext(const int32 P
 	if (!Context.IsValid())
 	{
 		FString Host;
-		const bool bShouldConnect = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiHost="), Host);
+		const bool bShouldConnect = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiHost="), Host) && !Host.IsEmpty();
 
-		uint16 Port = bShouldConnect ? 8888 : (8889 + FMath::Max(PIEInstance, 0));
-		bool bShouldListen = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiPort="), Port);
+		uint16 Port = bShouldConnect ? 8888 : 8889;
+		const bool bShouldListen = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiPort="), Port) && Port != 0;
+
+		if (!bShouldConnect)
+		{
+			// Bind consecutive listen ports for PIE sessions
+			Port += PIEInstance + 1;
+		}
 
 #if WITH_EDITOR
 		if (GIsEditor && PIEInstance == INDEX_NONE)
@@ -71,7 +77,6 @@ TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateSessionContext(const int32 P
 			else
 			{
 				Context = FImGuiContext::Create();
-				bShouldListen = true;
 			}
 #endif
 		}
