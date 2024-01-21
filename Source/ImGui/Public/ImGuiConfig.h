@@ -56,14 +56,20 @@ namespace ImGui
 	struct IMGUI_API FScopedContext
 	{
 		UE_NODISCARD_CTOR explicit FScopedContext(const int32 PIEInstance = GPlayInEditorID);
-		UE_NODISCARD_CTOR explicit FScopedContext(const TSharedPtr<const FImGuiContext>& InContext);
+		UE_NODISCARD_CTOR explicit FScopedContext(const TSharedPtr<FImGuiContext>& InContext);
 		~FScopedContext();
 
-		/// Returns true if the current ImGui context is ready for use
+		/// Returns true if the underlying ImGui context is ready for drawing
 		explicit operator bool() const;
 
+		/// Returns true if the managed ImGui context is valid
+		bool IsValid() const;
+
+		/// Access to the managed ImGui context
+		FImGuiContext* operator->() const;
+
 	private:
-		TSharedPtr<const FImGuiContext> Context = nullptr;
+		TSharedPtr<FImGuiContext> Context = nullptr;
 		ImGuiContext* PrevContext = nullptr;
 		ImPlotContext* PrevPlotContext = nullptr;
 	};

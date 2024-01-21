@@ -360,12 +360,14 @@ void FImGuiContext::Initialize()
 	// Ensure main viewport data is created ahead of time
 	FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
 
-	TickHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FImGuiContext::OnTick));
+	FCoreDelegates::OnBeginFrame.AddSP(this, &FImGuiContext::BeginFrame);
+	FCoreDelegates::OnEndFrame.AddSP(this, &FImGuiContext::EndFrame);
 }
 
 FImGuiContext::~FImGuiContext()
 {
-	FTSTicker::RemoveTicker(TickHandle);
+	FCoreDelegates::OnBeginFrame.RemoveAll(this);
+	FCoreDelegates::OnEndFrame.RemoveAll(this);
 
 	if (FSlateApplication::IsInitialized())
 	{
@@ -445,7 +447,7 @@ FImGuiContext::operator ImPlotContext*() const
 	return PlotContext;
 }
 
-void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics) const
+void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics)
 {
 	ImGui::FScopedContext ScopedContext(AsShared());
 
@@ -470,14 +472,6 @@ void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetric
 			PlatformIO.Monitors.push_back(ImGuiMonitor);
 		}
 	}
-}
-
-bool FImGuiContext::OnTick(float DeltaTime)
-{
-	EndFrame();
-	BeginFrame();
-
-	return true;
 }
 
 void FImGuiContext::BeginFrame()
@@ -524,7 +518,7 @@ void FImGuiContext::BeginFrame()
 	ImGui::NewFrame();
 }
 
-void FImGuiContext::EndFrame() const
+void FImGuiContext::EndFrame()
 {
 	if (!Context->WithinFrameScope)
 	{

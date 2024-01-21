@@ -27,7 +27,7 @@ ImGui::FScopedContext::FScopedContext(const int32 PIEInstance)
 {
 }
 
-ImGui::FScopedContext::FScopedContext(const TSharedPtr<const FImGuiContext>& InContext)
+ImGui::FScopedContext::FScopedContext(const TSharedPtr<FImGuiContext>& InContext)
 	: Context(InContext)
 {
 	PrevContext = GetCurrentContext();
@@ -55,6 +55,16 @@ ImGui::FScopedContext::operator bool() const
 {
 	const ImGuiContext* CurrContext = GetCurrentContext();
 	return CurrContext && CurrContext->Initialized && CurrContext->WithinFrameScope;
+}
+
+bool ImGui::FScopedContext::IsValid() const
+{
+	return Context.IsValid();
+}
+
+FImGuiContext* ImGui::FScopedContext::operator->() const
+{
+	return Context.operator->();
 }
 
 ImGuiKey ImGui::ConvertKey(const FKey& Key)

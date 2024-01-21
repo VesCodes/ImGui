@@ -2,10 +2,6 @@
 
 #include <Framework/Application/SlateApplication.h>
 
-#if WITH_ENGINE
-#include <Engine/Texture2D.h>
-#endif
-
 #include "ImGuiContext.h"
 
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)

@@ -1,16 +1,16 @@
 #pragma once
 
-#include <Containers/Ticker.h>
 #include <Templates/SharedPointer.h>
 
 #if WITH_ENGINE
-#include <Engine/Texture2D.h> // TStrongObjectPtr doesn't like forward declared types
+#include <Engine/Texture2D.h>
 #include <UObject/StrongObjectPtr.h>
 #endif
 
 class SWindow;
 class SImGuiOverlay;
 struct FDisplayMetrics;
+struct FSlateBrush;
 struct ImGuiContext;
 struct ImGuiViewport;
 struct ImPlotContext;
@@ -35,6 +35,12 @@ public:
 
 	~FImGuiContext();
 
+	/// Begins a new frame
+	void BeginFrame();
+
+	/// Ends the current frame
+	void EndFrame();
+
 	/// Listens for remote connections
 	bool Listen(int16 Port);
 
@@ -44,20 +50,16 @@ public:
 	/// Closes all remote connections
 	void Disconnect();
 
-	/// Implicit conversion operator for the underlying ImGui context
+	/// Access to the underlying ImGui context
 	operator ImGuiContext*() const;
 
-	/// Implicit conversion operator for the underlying ImPlot context
+	/// Access to the underlying ImPlot context
 	operator ImPlotContext*() const;
 
 private:
 	void Initialize();
 
-	void OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics) const;
-	bool OnTick(float DeltaTime);
-
-	void BeginFrame();
-	void EndFrame() const;
+	void OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics);
 
 	ImGuiContext* Context = nullptr;
 	ImPlotContext* PlotContext = nullptr;
@@ -65,8 +67,6 @@ private:
 	char IniFilenameAnsi[1024] = {};
 	char LogFilenameAnsi[1024] = {};
 	bool bIsRemote = false;
-
-	FTSTicker::FDelegateHandle TickHandle;
 
 #if WITH_ENGINE
 	TStrongObjectPtr<UTexture2D> FontAtlasTexturePtr = nullptr;
