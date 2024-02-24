@@ -1,6 +1,7 @@
 #include "ImGuiConfig.h"
 
 #include <InputCoreTypes.h>
+#include <HAL/PlatformFileManager.h>
 
 #if WITH_ENGINE
 #include <Engine/Texture2D.h>
@@ -21,6 +22,100 @@ THIRD_PARTY_INCLUDES_END
 
 #include "ImGuiContext.h"
 #include "ImGuiModule.h"
+
+#ifdef IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS
+ImFileHandle ImFileOpen(const char* FileName, const char* Mode)
+{
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
+	bool bRead = false;
+	bool bWrite = false;
+	bool bAppend = false;
+	bool bExtended = false;
+
+	for (; *Mode; ++Mode)
+	{
+		if (*Mode == 'r')
+		{
+			bRead = true;
+		}
+		else if (*Mode == 'w')
+		{
+			bWrite = true;
+		}
+		else if (*Mode == 'a')
+		{
+			bAppend = true;
+		}
+		else if (*Mode == '+')
+		{
+			bExtended = true;
+		}
+	}
+
+	if (bWrite || bAppend || bExtended)
+	{
+		return PlatformFile.OpenWrite(UTF8_TO_TCHAR(FileName), bAppend, bExtended);
+	}
+
+	if (bRead)
+	{
+		return PlatformFile.OpenRead(UTF8_TO_TCHAR(FileName), true);
+	}
+
+	return nullptr;
+}
+
+bool ImFileClose(ImFileHandle File)
+{
+	if (!File)
+	{
+		return false;
+	}
+
+	delete File;
+	return true;
+}
+
+uint64 ImFileGetSize(ImFileHandle File)
+{
+	if (!File)
+	{
+		return MAX_uint64;
+	}
+
+	const uint64 FileSize = File->Size();
+	return FileSize;
+}
+
+uint64 ImFileRead(void* Data, uint64 Size, uint64 Count, ImFileHandle File)
+{
+	if (!File)
+	{
+		return 0;
+	}
+
+	const int64 StartPos = File->Tell();
+	File->Read(static_cast<uint8*>(Data), Size * Count);
+
+	const uint64 ReadSize = File->Tell() - StartPos;
+	return ReadSize;
+}
+
+uint64 ImFileWrite(const void* Data, uint64 Size, uint64 Count, ImFileHandle File)
+{
+	if (!File)
+	{
+		return 0;
+	}
+
+	const int64 StartPos = File->Tell();
+	File->Write(static_cast<const uint8*>(Data), Size * Count);
+
+	const uint64 WriteSize = File->Tell() - StartPos;
+	return WriteSize;
+}
+#endif
 
 ImGui::FScopedContext::FScopedContext(const int32 PIEInstance)
 	: FScopedContext(FImGuiModule::Get().FindOrCreateSessionContext(PIEInstance))

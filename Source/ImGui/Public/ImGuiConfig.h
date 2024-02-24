@@ -12,7 +12,16 @@
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 #define IMGUI_DISABLE_WIN32_FUNCTIONS
 #define IMGUI_DISABLE_DEFAULT_ALLOCATORS
-// #TODO(Ves): IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS
+#define IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS
+
+#ifdef IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS
+typedef IFileHandle* ImFileHandle;
+ImFileHandle ImFileOpen(const char* FileName, const char* Mode);
+bool ImFileClose(ImFileHandle File);
+uint64 ImFileGetSize(ImFileHandle File);
+uint64 ImFileRead(void* Data, uint64 Size, uint64 Count, ImFileHandle File);
+uint64 ImFileWrite(const void* Data, uint64 Size, uint64 Count, ImFileHandle File);
+#endif
 
 #define IM_VEC2_CLASS_EXTRA \
 	operator FVector2f() const { return FVector2f(x, y); } \
