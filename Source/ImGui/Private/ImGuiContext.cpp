@@ -61,6 +61,7 @@ static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 
 		const bool bTooltipWindow = (Viewport->Flags & ImGuiViewportFlags_TopMost);
 		const bool bPopupWindow = (Viewport->Flags & ImGuiViewportFlags_NoTaskBarIcon);
+		const bool bNoFocusOnAppearing = (Viewport->Flags & ImGuiViewportFlags_NoFocusOnAppearing);
 
 		// #TODO(Ves): Still blits a black background in the window frame :(
 		static FWindowStyle WindowStyle = FWindowStyle()
@@ -82,7 +83,8 @@ static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 			.SizingRule(ESizingRule::UserSized)
 			.IsPopupWindow(bTooltipWindow || bPopupWindow)
 			.IsTopmostWindow(bTooltipWindow)
-			.FocusWhenFirstShown(!(Viewport->Flags & ImGuiViewportFlags_NoFocusOnAppearing))
+			.FocusWhenFirstShown(!bNoFocusOnAppearing)
+			.ActivationPolicy(bNoFocusOnAppearing ? EWindowActivationPolicy::Never : EWindowActivationPolicy::Always)
 			.HasCloseButton(false)
 			.SupportsMaximize(false)
 			.SupportsMinimize(false)
