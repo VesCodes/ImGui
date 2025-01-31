@@ -62,8 +62,15 @@ TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateSessionContext(const int32 P
 			Port += PieSessionId + 1;
 		}
 
+#if WITH_ENGINE
+		const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PIEInstance);
+		UGameViewportClient* GameViewport = WorldContext ? WorldContext->GameViewport : GEngine->GameViewport;
+		if (IsValid(GameViewport))
+		{
+			Context = CreateViewportContext(GameViewport);
+		}
 #if WITH_EDITOR
-		if (GIsEditor && PieSessionId == INDEX_NONE)
+		else if (GIsEditor)
 		{
 			const IMainFrameModule* MainFrameModule = FModuleManager::GetModulePtr<IMainFrameModule>("MainFrame");
 			const TSharedPtr<SWindow> MainFrameWindow = MainFrameModule ? MainFrameModule->GetParentWindow() : nullptr;
@@ -72,21 +79,12 @@ TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateSessionContext(const int32 P
 				Context = CreateWindowContext(MainFrameWindow.ToSharedRef());
 			}
 		}
-		else
 #endif
+#endif
+		
+		if (!Context.IsValid())
 		{
-#if WITH_ENGINE
-			const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PieSessionId);
-			UGameViewportClient* GameViewport = WorldContext ? WorldContext->GameViewport : GEngine->GameViewport;
-			if (IsValid(GameViewport))
-			{
-				Context = CreateViewportContext(GameViewport);
-			}
-			else
-			{
-				Context = FImGuiContext::Create();
-			}
-#endif
+			Context = FImGuiContext::Create();
 		}
 
 		if (Context.IsValid())
