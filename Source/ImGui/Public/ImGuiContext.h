@@ -24,9 +24,18 @@ struct IMGUI_API FImGuiViewportData
 	TWeakPtr<SImGuiOverlay> Overlay = nullptr;
 };
 
+DECLARE_MULTICAST_DELEGATE(FImGuiOnPreFrame)
+
 class IMGUI_API FImGuiContext : public TSharedFromThis<FImGuiContext>
 {
 public:
+	/// Callback executed right before starting a new ImGui frame
+	FImGuiOnPreFrame OnPreFrame;
+
+	static const FString& GetDefaultFontPath();
+
+	static constexpr int32 DefaultFontSize = 16;
+
 	/// Creates a managed ImGui context
 	static TSharedRef<FImGuiContext> Create();
 

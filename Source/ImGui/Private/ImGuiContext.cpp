@@ -65,38 +65,36 @@ static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 
 		// #TODO(Ves): Still blits a black background in the window frame :(
 		static FWindowStyle WindowStyle = FWindowStyle()
-		                                  .SetActiveTitleBrush(FSlateNoResource())
-		                                  .SetInactiveTitleBrush(FSlateNoResource())
-		                                  .SetFlashTitleBrush(FSlateNoResource())
-		                                  .SetOutlineBrush(FSlateNoResource())
-		                                  .SetBorderBrush(FSlateNoResource())
-		                                  .SetBackgroundBrush(FSlateNoResource())
-		                                  .SetChildBackgroundBrush(FSlateNoResource());
+											  .SetActiveTitleBrush(FSlateNoResource())
+											  .SetInactiveTitleBrush(FSlateNoResource())
+											  .SetFlashTitleBrush(FSlateNoResource())
+											  .SetOutlineBrush(FSlateNoResource())
+											  .SetBorderBrush(FSlateNoResource())
+											  .SetBackgroundBrush(FSlateNoResource())
+											  .SetChildBackgroundBrush(FSlateNoResource());
 
 		const TSharedRef<SWindow> Window =
 			SAssignNew(ViewportData->Window, SWindow)
-			.Type(bTooltipWindow ? EWindowType::ToolTip : EWindowType::Normal)
-			.Style(&WindowStyle)
-			.ScreenPosition(FVector2f(Viewport->Pos))
-			.ClientSize(FVector2f(Viewport->Size))
-			.SupportsTransparency(EWindowTransparency::PerWindow)
-			.SizingRule(ESizingRule::UserSized)
-			.IsPopupWindow(bTooltipWindow || bPopupWindow)
-			.IsTopmostWindow(bTooltipWindow)
-			.FocusWhenFirstShown(!bNoFocusOnAppearing)
-			.ActivationPolicy(bNoFocusOnAppearing ? EWindowActivationPolicy::Never : EWindowActivationPolicy::Always)
-			.HasCloseButton(false)
-			.SupportsMaximize(false)
-			.SupportsMinimize(false)
-			.CreateTitleBar(false)
-			.LayoutBorder(0)
-			.UserResizeBorder(0)
-			.UseOSWindowBorder(false)
-			[
-				SAssignNew(ViewportData->Overlay, SImGuiOverlay)
-				.Context(FImGuiContext::Get(ImGui::GetCurrentContext()))
-				.HandleInput(false)
-			];
+				.Type(bTooltipWindow ? EWindowType::ToolTip : EWindowType::Normal)
+				.Style(&WindowStyle)
+				.ScreenPosition(FVector2f(Viewport->Pos))
+				.ClientSize(FVector2f(Viewport->Size))
+				.SupportsTransparency(EWindowTransparency::PerWindow)
+				.SizingRule(ESizingRule::UserSized)
+				.IsPopupWindow(bTooltipWindow || bPopupWindow)
+				.IsTopmostWindow(bTooltipWindow)
+				.FocusWhenFirstShown(!bNoFocusOnAppearing)
+				.ActivationPolicy(
+					bNoFocusOnAppearing ? EWindowActivationPolicy::Never : EWindowActivationPolicy::Always)
+				.HasCloseButton(false)
+				.SupportsMaximize(false)
+				.SupportsMinimize(false)
+				.CreateTitleBar(false)
+				.LayoutBorder(0)
+				.UserResizeBorder(0)
+				.UseOSWindowBorder(false)[SAssignNew(ViewportData->Overlay, SImGuiOverlay)
+											  .Context(FImGuiContext::Get(ImGui::GetCurrentContext()))
+											  .HandleInput(false)];
 
 		if (ParentWindow.IsValid())
 		{
@@ -290,7 +288,11 @@ const char* ImGui_GetClipboardText(ImGuiContext* Context)
 		FPlatformApplicationMisc::ClipboardPaste(ClipboardText);
 
 		ClipboardBuffer->SetNumUninitialized(FPlatformString::ConvertedLength<UTF8CHAR>(*ClipboardText));
-		FPlatformString::Convert(reinterpret_cast<UTF8CHAR*>(ClipboardBuffer->GetData()), ClipboardBuffer->Num(), *ClipboardText, ClipboardText.Len() + 1);
+		FPlatformString::Convert(
+			reinterpret_cast<UTF8CHAR*>(ClipboardBuffer->GetData()),
+			ClipboardBuffer->Num(),
+			*ClipboardText,
+			ClipboardText.Len() + 1);
 
 		return ClipboardBuffer->GetData();
 	}
@@ -306,6 +308,12 @@ void ImGui_SetClipboardText(ImGuiContext* Context, const char* ClipboardText)
 static bool ImGui_OpenInShell(ImGuiContext* Context, const char* Path)
 {
 	return FPlatformProcess::LaunchFileInDefaultExternalApplication(UTF8_TO_TCHAR(Path));
+}
+
+const FString& FImGuiContext::GetDefaultFontPath()
+{
+	static const FString FontPath{FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf")};
+	return FontPath;
 }
 
 TSharedRef<FImGuiContext> FImGuiContext::Create()
@@ -364,12 +372,21 @@ void FImGuiContext::Initialize()
 	// Ensure each PIE session has a uniquely identifiable context
 	const FString ContextName = (PieSessionId > 0 ? FString::Printf(TEXT("ImGui_%d"), PieSessionId) : TEXT("ImGui"));
 
-	const FString IniFilename = FPaths::GeneratedConfigDir() / FPlatformProperties::PlatformName() / ContextName + TEXT(".ini");
-	FPlatformString::Convert(reinterpret_cast<UTF8CHAR*>(IniFilenameUtf8), UE_ARRAY_COUNT(IniFilenameUtf8), *IniFilename, IniFilename.Len() + 1);
+	const FString IniFilename =
+		FPaths::GeneratedConfigDir() / FPlatformProperties::PlatformName() / ContextName + TEXT(".ini");
+	FPlatformString::Convert(
+		reinterpret_cast<UTF8CHAR*>(IniFilenameUtf8),
+		UE_ARRAY_COUNT(IniFilenameUtf8),
+		*IniFilename,
+		IniFilename.Len() + 1);
 	IO.IniFilename = IniFilenameUtf8;
 
 	const FString LogFilename = FPaths::ProjectLogDir() / ContextName + TEXT(".log");
-	FPlatformString::Convert(reinterpret_cast<UTF8CHAR*>(LogFilenameUtf8), UE_ARRAY_COUNT(LogFilenameUtf8), *LogFilename, LogFilename.Len() + 1);
+	FPlatformString::Convert(
+		reinterpret_cast<UTF8CHAR*>(LogFilenameUtf8),
+		UE_ARRAY_COUNT(LogFilenameUtf8),
+		*LogFilename,
+		LogFilename.Len() + 1);
 	IO.LogFilename = LogFilenameUtf8;
 
 	ImGuiPlatformIO& PlatformIO = ImGui::GetPlatformIO();
@@ -393,10 +410,10 @@ void FImGuiContext::Initialize()
 	PlatformIO.Platform_SetClipboardTextFn = ImGui_SetClipboardText;
 	PlatformIO.Platform_OpenInShellFn = ImGui_OpenInShell;
 
-	const FString FontPath = FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf");
-	if (FPaths::FileExists(*FontPath))
+	if (FPaths::FileExists(*GetDefaultFontPath()))
 	{
-		IO.Fonts->AddFontFromFileTTF(TCHAR_TO_UTF8(*FontPath), 16);
+		const FUtf8String DefaultFontPathUtf8{StringCast<UTF8CHAR>(*GetDefaultFontPath())};
+		IO.Fonts->AddFontFromFileTTF(reinterpret_cast<const char*>(*DefaultFontPathUtf8), DefaultFontSize);
 	}
 
 	if (FSlateApplication::IsInitialized())
@@ -404,7 +421,8 @@ void FImGuiContext::Initialize()
 		// Enable multi-viewports support for Slate applications
 		IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-		if (const TSharedPtr<GenericApplication> PlatformApplication = FSlateApplication::Get().GetPlatformApplication())
+		if (const TSharedPtr<GenericApplication> PlatformApplication =
+				FSlateApplication::Get().GetPlatformApplication())
 		{
 			FDisplayMetrics DisplayMetrics;
 			FDisplayMetrics::RebuildDisplayMetrics(DisplayMetrics);
@@ -427,7 +445,8 @@ FImGuiContext::~FImGuiContext()
 
 	if (FSlateApplication::IsInitialized())
 	{
-		if (const TSharedPtr<GenericApplication> PlatformApplication = FSlateApplication::Get().GetPlatformApplication())
+		if (const TSharedPtr<GenericApplication> PlatformApplication =
+				FSlateApplication::Get().GetPlatformApplication())
 		{
 			PlatformApplication->OnDisplayMetricsChanged().RemoveAll(this);
 		}
@@ -527,8 +546,11 @@ void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetric
 		ImGuiPlatformMonitor ImGuiMonitor;
 		ImGuiMonitor.MainPos = FIntPoint(0, 0);
 		ImGuiMonitor.MainSize = FIntPoint(DisplayMetrics.PrimaryDisplayWidth, DisplayMetrics.PrimaryDisplayHeight);
-		ImGuiMonitor.WorkPos = FIntPoint(DisplayMetrics.PrimaryDisplayWorkAreaRect.Left, DisplayMetrics.PrimaryDisplayWorkAreaRect.Top);
-		ImGuiMonitor.WorkSize = FIntPoint(DisplayMetrics.PrimaryDisplayWorkAreaRect.Right - DisplayMetrics.PrimaryDisplayWorkAreaRect.Left, DisplayMetrics.PrimaryDisplayWorkAreaRect.Bottom - DisplayMetrics.PrimaryDisplayWorkAreaRect.Top);
+		ImGuiMonitor.WorkPos =
+			FIntPoint(DisplayMetrics.PrimaryDisplayWorkAreaRect.Left, DisplayMetrics.PrimaryDisplayWorkAreaRect.Top);
+		ImGuiMonitor.WorkSize = FIntPoint(
+			DisplayMetrics.PrimaryDisplayWorkAreaRect.Right - DisplayMetrics.PrimaryDisplayWorkAreaRect.Left,
+			DisplayMetrics.PrimaryDisplayWorkAreaRect.Bottom - DisplayMetrics.PrimaryDisplayWorkAreaRect.Top);
 		ImGuiMonitor.DpiScale = 1.0f;
 
 		PlatformIO.Monitors.push_front(ImGuiMonitor);
@@ -539,9 +561,12 @@ void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetric
 		{
 			ImGuiPlatformMonitor ImGuiMonitor;
 			ImGuiMonitor.MainPos = FIntPoint(Monitor.DisplayRect.Left, Monitor.DisplayRect.Top);
-			ImGuiMonitor.MainSize = FIntPoint(Monitor.DisplayRect.Right - Monitor.DisplayRect.Left, Monitor.DisplayRect.Bottom - Monitor.DisplayRect.Top);
+			ImGuiMonitor.MainSize = FIntPoint(
+				Monitor.DisplayRect.Right - Monitor.DisplayRect.Left,
+				Monitor.DisplayRect.Bottom - Monitor.DisplayRect.Top);
 			ImGuiMonitor.WorkPos = FIntPoint(Monitor.WorkArea.Left, Monitor.WorkArea.Top);
-			ImGuiMonitor.WorkSize = FIntPoint(Monitor.WorkArea.Right - Monitor.WorkArea.Left, Monitor.WorkArea.Bottom - Monitor.WorkArea.Top);
+			ImGuiMonitor.WorkSize = FIntPoint(
+				Monitor.WorkArea.Right - Monitor.WorkArea.Left, Monitor.WorkArea.Bottom - Monitor.WorkArea.Top);
 			ImGuiMonitor.DpiScale = Monitor.DPI / 96.0f;
 
 			if (Monitor.bIsPrimary)
@@ -581,12 +606,15 @@ void FImGuiContext::BeginFrame()
 		FontAtlasTexturePtr.Reset(FImageUtils::CreateTexture2DFromImage(TextureView));
 #else
 		FontAtlasTexturePtr = FSlateDynamicImageBrush::CreateWithImageData(
-			TEXT("ImGuiFontAtlas"), FVector2D(TextureWidth, TextureHeight),
+			TEXT("ImGuiFontAtlas"),
+			FVector2D(TextureWidth, TextureHeight),
 			TArray(TextureDataRaw, TextureWidth * TextureHeight * BytesPerPixel));
 #endif
 
 		IO.Fonts->SetTexID(FontAtlasTexturePtr.Get());
 	}
+
+	OnPreFrame.Broadcast();
 
 	ImGui::NewFrame();
 }
