@@ -18,7 +18,7 @@ THIRD_PARTY_INCLUDES_START
 #include <imgui_internal.h>
 #include <implot.h>
 #define NETIMGUI_IMPLEMENTATION
-#include <NetImGui_Api.h>
+#include <NetImgui_Api.h>
 THIRD_PARTY_INCLUDES_END
 
 #include "SImGuiOverlay.h"
