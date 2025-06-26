@@ -156,6 +156,8 @@ public:
 
 		ImGuiIO& IO = ImGui::GetIO();
 
+		IO.AddMouseSourceEvent(Event.IsTouchEvent() ? ImGuiMouseSource_TouchScreen : ImGuiMouseSource_Mouse);
+
 		if (SlateApp.HasAnyMouseCaptor())
 		{
 			IO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
@@ -185,6 +187,17 @@ public:
 
 		ImGuiIO& IO = ImGui::GetIO();
 
+		if (Event.IsTouchEvent())
+		{
+			IO.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
+			const FVector2f Position = Event.GetScreenSpacePosition();
+			IO.AddMousePosEvent(Position.X, Position.Y);
+		}
+		else
+		{
+			IO.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+		}
+
 		const FKey Button = Event.GetEffectingButton();
 		if (Button == EKeys::LeftMouseButton)
 		{
@@ -212,6 +225,8 @@ public:
 		ImGui::FScopedContext ScopedContext(Owner->GetContext());
 
 		ImGuiIO& IO = ImGui::GetIO();
+
+		IO.AddMouseSourceEvent(Event.IsTouchEvent() ? ImGuiMouseSource_TouchScreen : ImGuiMouseSource_Mouse);
 
 		const FKey Button = Event.GetEffectingButton();
 		if (Button == EKeys::LeftMouseButton)
