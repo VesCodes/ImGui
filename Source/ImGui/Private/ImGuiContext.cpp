@@ -360,8 +360,10 @@ void FImGuiContext::Initialize()
 
 	IO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 	IO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+#if PLATFORM_DESKTOP
 	IO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
+#endif
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
 #if UE_VERSION_OLDER_THAN(5, 5, 0)
