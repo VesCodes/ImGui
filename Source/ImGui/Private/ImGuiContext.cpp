@@ -342,7 +342,7 @@ void FImGuiContext::Initialize()
 #endif
 
 	// Ensure each PIE session has a uniquely identifiable context
-	const FString ContextName = (PieSessionId > 0 ? FString::Printf(TEXT("ImGui_%d"), PieSessionId) : TEXT("ImGui"));
+	const FString ContextName = (PieSessionId > 0 ? FString::Printf(TEXT("ImGuiGameUserSettings_%d"), PieSessionId) : TEXT("ImGuiGameUserSettings"));
 
 	const FString IniFilename = FPaths::GeneratedConfigDir() / FPlatformProperties::PlatformName() / ContextName + TEXT(".ini");
 	FPlatformString::Convert(reinterpret_cast<UTF8CHAR*>(IniFilenameUtf8), UE_ARRAY_COUNT(IniFilenameUtf8), *IniFilename, IniFilename.Len() + 1);
