@@ -183,7 +183,7 @@ public:
 				TargetViewport = FindViewportForWindow(LastWidgetsUnderPointer.Window.Pin());
 			}
 
-			if (!TargetViewport && !ImGui::IsMouseDragging(0))
+			if (!TargetViewport && !ImGui::IsMouseDown(0))
 			{
 				IO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
 				return false;
