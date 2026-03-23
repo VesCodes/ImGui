@@ -447,8 +447,13 @@ FImGuiContext::~FImGuiContext()
 			}
 		}
 
+		ImGuiContext* PreviousContext = ImGui::GetCurrentContext();
+		ImGui::SetCurrentContext(Context);
+
 		ImGui::DestroyPlatformWindows();
-		ImGui::DestroyContext(Context);
+		ImGui::DestroyContext();
+
+		ImGui::SetCurrentContext(PreviousContext);
 		Context = nullptr;
 	}
 }
