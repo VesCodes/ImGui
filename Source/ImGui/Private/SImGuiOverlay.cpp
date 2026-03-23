@@ -1,5 +1,7 @@
 ﻿#include "SImGuiOverlay.h"
 
+#ifndef IMGUI_DISABLE
+
 #include <Framework/Application/SlateApplication.h>
 
 #include "ImGuiContext.h"
@@ -462,3 +464,5 @@ void SImGuiOverlay::SetDrawData(const ImDrawData* InDrawData)
 {
 	DrawData = FImGuiDrawData(InDrawData);
 }
+
+#endif // #ifndef IMGUI_DISABLE

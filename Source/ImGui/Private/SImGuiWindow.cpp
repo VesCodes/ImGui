@@ -1,5 +1,7 @@
 #include "SImGuiWindow.h"
 
+#ifndef IMGUI_DISABLE
+
 THIRD_PARTY_INCLUDES_START
 #include <imgui.h>
 THIRD_PARTY_INCLUDES_END
@@ -55,3 +57,5 @@ bool SImGuiWindow::OnIsActiveChanged(const FWindowActivateEvent& ActivateEvent)
 
 	return SWindow::OnIsActiveChanged(ActivateEvent);
 }
+
+#endif // #ifndef IMGUI_DISABLE

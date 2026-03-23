@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IMGUI_DISABLE
+
 #include <Widgets/SWindow.h>
 
 struct ImGuiViewport;
@@ -18,3 +20,5 @@ class SImGuiWindow : public SWindow
 
 	virtual bool OnIsActiveChanged(const FWindowActivateEvent& ActivateEvent) override;
 };
+
+#endif // #ifndef IMGUI_DISABLE

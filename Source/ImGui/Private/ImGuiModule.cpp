@@ -1,5 +1,7 @@
 ﻿#include "ImGuiModule.h"
 
+#ifndef IMGUI_DISABLE
+
 #include <Widgets/SWindow.h>
 
 #if WITH_ENGINE
@@ -205,3 +207,11 @@ TSharedPtr<FImGuiContext> FImGuiModule::CreateViewportContext(UGameViewportClien
 }
 
 IMPLEMENT_MODULE(FImGuiModule, ImGui);
+
+#else // #ifndef IMGUI_DISABLE
+
+#include "Modules/ModuleManager.h"
+
+IMPLEMENT_MODULE(FDefaultModuleImpl, ImGui);
+
+#endif // #ifndef IMGUI_DISABLE

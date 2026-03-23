@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#ifndef IMGUI_DISABLE
+
 #include <Framework/Application/IInputProcessor.h>
 #include <Widgets/SLeafWidget.h>
 
@@ -62,3 +64,5 @@ private:
 	TSharedPtr<IInputProcessor> InputProcessor = nullptr;
 	FImGuiDrawData DrawData;
 };
+
+#endif // #ifndef IMGUI_DISABLE

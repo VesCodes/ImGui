@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#ifndef IMGUI_DISABLE
+
 #include <Misc/EngineVersionComparison.h>
 #include <Modules/ModuleManager.h>
 
@@ -37,3 +39,5 @@ private:
 
 	TMap<int32, TSharedPtr<FImGuiContext>> SessionContexts;
 };
+
+#endif // #ifndef IMGUI_DISABLE

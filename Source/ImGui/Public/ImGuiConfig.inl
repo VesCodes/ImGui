@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef IMGUI_DISABLE
+
 namespace ImGui
 {
 	/// Converts ImGui 32-bit color to UE color
@@ -15,3 +17,5 @@ namespace ImGui
 		DstArray = TArrayView<SrcType>(SrcArray.Data, SrcArray.Size);
 	}
 }
+
+#endif // #ifndef IMGUI_DISABLE

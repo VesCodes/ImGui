@@ -1,5 +1,7 @@
 #include "ImGuiConfig.h"
 
+#ifndef IMGUI_DISABLE
+
 #include <InputCoreTypes.h>
 #include <Framework/Commands/InputChord.h>
 #include <HAL/PlatformFileManager.h>
@@ -495,3 +497,5 @@ FInputChord ImGui::ConvertKeyChord(const ImGuiKeyChord Chord)
 
 	return Result;
 }
+
+#endif // #ifndef IMGUI_DISABLE

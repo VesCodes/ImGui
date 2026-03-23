@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#ifndef IMGUI_DISABLE
+
 #include <Math/Color.h>
 #include <Math/IntPoint.h>
 #include <Math/IntVector.h>
@@ -127,3 +129,5 @@ namespace ImGui
 
 #define IMGUI_INCLUDE_IMGUI_USER_H
 #define IMGUI_USER_H_FILENAME "ImGuiConfig.inl"
+
+#endif // #ifndef IMGUI_DISABLE

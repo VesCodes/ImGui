@@ -1,5 +1,7 @@
 #include "ImGuiContext.h"
 
+#ifndef IMGUI_DISABLE
+
 #include <Framework/Application/SlateApplication.h>
 #include <HAL/LowLevelMemTracker.h>
 #include <HAL/PlatformApplicationMisc.h>
@@ -733,3 +735,5 @@ void FImGuiContext::EndFrame()
 		ImGui::RenderPlatformWindowsDefault();
 	}
 }
+
+#endif // #ifndef IMGUI_DISABLE
