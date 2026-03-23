@@ -498,4 +498,24 @@ FInputChord ImGui::ConvertKeyChord(const ImGuiKeyChord Chord)
 	return Result;
 }
 
+ImGuiMouseButton ImGui::ConvertMouseButton(const FKey& Key)
+{
+	if (Key == EKeys::LeftMouseButton)
+	{
+		return ImGuiMouseButton_Left;
+	}
+
+	if (Key == EKeys::RightMouseButton)
+	{
+		return ImGuiMouseButton_Right;
+	}
+
+	if (Key == EKeys::MiddleMouseButton)
+	{
+		return ImGuiMouseButton_Middle;
+	}
+
+	return -1;
+}
+
 #endif // #ifndef IMGUI_DISABLE
