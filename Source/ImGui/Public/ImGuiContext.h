@@ -46,10 +46,10 @@ public:
 
 #if WITH_NETIMGUI
 	/// Listens for remote connections
-	bool Listen(uint16 Port);
+	bool Listen(uint32 Port);
 
 	/// Connects to a remote host
-	bool Connect(const FString& Host, int16 Port);
+	bool Connect(const FString& Host, uint32 Port);
 
 	/// Closes all remote connections
 	void Disconnect();
@@ -81,10 +81,6 @@ private:
 	char IniFilenameUtf8[1024] = {};
 	char LogFilenameUtf8[1024] = {};
 	TArray<char> ClipboardBuffer;
-
-#if WITH_NETIMGUI
-	bool bIsRemote = false;
-#endif
 
 #if WITH_ENGINE
 	using FTextureRef = TStrongObjectPtr<UTexture>;

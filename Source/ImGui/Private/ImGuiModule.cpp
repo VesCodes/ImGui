@@ -88,22 +88,20 @@ TSharedPtr<FImGuiContext> FImGuiModule::FindOrCreateSessionContext(const int32 P
 			uint16 Port = bShouldConnect ? 8888 : 8889;
 			const bool bShouldListen = FParse::Value(FCommandLine::Get(), TEXT("-ImGuiPort="), Port) && Port != 0;
 
-			if (!bShouldConnect)
+			if (bShouldConnect)
+			{
+				Context->Connect(Host, Port);
+			}
+			else if (bShouldListen)
 			{
 				// Bind consecutive listen ports for PIE sessions
 				Port += PieSessionId + 1;
-			}
 
-			if ((bShouldConnect && !Context->Connect(Host, Port)) || (bShouldListen && !Context->Listen(Port)))
-			{
-				Context.Reset();
-				Context = nullptr;
+				Context->Listen(Port);
 			}
-			else
 #endif
-			{
-				SessionContexts.Add(PieSessionId, Context);
-			}
+
+			SessionContexts.Add(PieSessionId, Context);
 		}
 	}
 
