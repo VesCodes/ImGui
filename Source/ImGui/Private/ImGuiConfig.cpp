@@ -4,6 +4,7 @@
 
 #include <InputCoreTypes.h>
 #include <Framework/Commands/InputChord.h>
+#include <GenericPlatform/ICursor.h>
 #include <HAL/PlatformFileManager.h>
 
 #if WITH_ENGINE
@@ -496,6 +497,49 @@ FInputChord ImGui::ConvertKeyChord(const ImGuiKeyChord Chord)
 	Result.bCmd = (Chord & ImGuiMod_Super) != 0;
 
 	return Result;
+}
+
+EMouseCursor::Type ImGui::ConvertMouseCursor(const ImGuiMouseCursor Cursor)
+{
+	switch (Cursor)
+	{
+		case ImGuiMouseCursor_None:
+			return EMouseCursor::None;
+
+		case ImGuiMouseCursor_Arrow:
+			return EMouseCursor::Default;
+
+		case ImGuiMouseCursor_TextInput:
+			return EMouseCursor::TextEditBeam;
+
+		case ImGuiMouseCursor_ResizeAll:
+			return EMouseCursor::CardinalCross;
+
+		case ImGuiMouseCursor_ResizeNS:
+			return EMouseCursor::ResizeUpDown;
+
+		case ImGuiMouseCursor_ResizeEW:
+			return EMouseCursor::ResizeLeftRight;
+
+		case ImGuiMouseCursor_ResizeNESW:
+			return EMouseCursor::ResizeSouthWest;
+
+		case ImGuiMouseCursor_ResizeNWSE:
+			return EMouseCursor::ResizeSouthEast;
+
+		case ImGuiMouseCursor_Hand:
+			return EMouseCursor::Hand;
+
+		case ImGuiMouseCursor_Wait:
+		case ImGuiMouseCursor_Progress:
+			return EMouseCursor::Default;
+
+		case ImGuiMouseCursor_NotAllowed:
+			return EMouseCursor::SlashedCircle;
+
+		default:
+			return EMouseCursor::Default;
+	}
 }
 
 #endif // #ifndef IMGUI_DISABLE

@@ -6,8 +6,12 @@ THIRD_PARTY_INCLUDES_START
 #include <imgui.h>
 THIRD_PARTY_INCLUDES_END
 
+#include "ImGuiContext.h"
+
 void SImGuiWindow::Construct(const FArguments& Args)
 {
+	Context = Args._Context.IsValid() ? Args._Context : FImGuiContext::Create();
+
 	const bool bTooltipWindow = (Args._Viewport->Flags & ImGuiViewportFlags_TopMost);
 	const bool bPopupWindow = (Args._Viewport->Flags & ImGuiViewportFlags_NoTaskBarIcon);
 	const bool bNoFocusOnAppearing = (Args._Viewport->Flags & ImGuiViewportFlags_NoFocusOnAppearing);
@@ -56,6 +60,11 @@ bool SImGuiWindow::OnIsActiveChanged(const FWindowActivateEvent& ActivateEvent)
 	}
 
 	return SWindow::OnIsActiveChanged(ActivateEvent);
+}
+
+FCursorReply SImGuiWindow::OnCursorQuery(const FGeometry& MyGeometry, const FPointerEvent& CursorEvent) const
+{
+	return FCursorReply::Cursor(ImGui::ConvertMouseCursor(Context->GetLastMouseCursor()));
 }
 
 #endif // #ifndef IMGUI_DISABLE

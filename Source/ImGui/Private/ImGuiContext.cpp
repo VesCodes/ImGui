@@ -67,15 +67,17 @@ static void ImGui_CreateWindow(ImGuiViewport* Viewport)
 	FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(Viewport);
 	if (ViewportData)
 	{
+		const TSharedPtr<FImGuiContext> Context = FImGuiContext::Get(ImGui::GetCurrentContext());
 		const FImGuiViewportData* MainViewportData = FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
 		const TSharedPtr<SWindow> ParentWindow = MainViewportData ? MainViewportData->Window.Pin() : nullptr;
 
 		const TSharedRef<SWindow> Window =
 			SAssignNew(ViewportData->Window, SImGuiWindow)
 			.Viewport(Viewport)
+			.Context(Context)
 			[
 				SAssignNew(ViewportData->Overlay, SImGuiOverlay)
-				.Context(FImGuiContext::Get(ImGui::GetCurrentContext()))
+				.Context(Context)
 				.HandleInput(false)
 			];
 
@@ -530,6 +532,11 @@ FImGuiContext::operator ImPlotContext*() const
 }
 #endif
 
+ImGuiMouseCursor FImGuiContext::GetLastMouseCursor() const
+{
+	return LastMouseCursor;
+}
+
 void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics)
 {
 	ImGui::FScopedContext ScopedContext(AsShared());
@@ -711,6 +718,8 @@ void FImGuiContext::EndFrame()
 	}
 
 	ImGui::FScopedContext ScopedContext(AsShared());
+
+	LastMouseCursor = ImGui::GetMouseCursor();
 
 	ImGui::Render();
 	ImGui::UpdatePlatformWindows();
