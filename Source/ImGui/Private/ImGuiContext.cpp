@@ -337,6 +337,7 @@ void FImGuiContext::Initialize()
 
 	IO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
 	IO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+	IO.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 	IO.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;

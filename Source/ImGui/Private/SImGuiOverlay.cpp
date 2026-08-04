@@ -177,12 +177,17 @@ public:
 		const TSharedPtr<FSlateUser> SlateUser = SlateApp.GetUser(Event.GetUserIndex());
 		if (SlateUser.IsValid())
 		{
-			const FImGuiViewportData* TargetViewport = nullptr;
+			const ImGuiViewport* TargetViewport = nullptr;
 
 			if (!SlateUser->HasCapture(Event.GetPointerIndex()))
 			{
 				const FWeakWidgetPath LastWidgetsUnderPointer = SlateUser->GetLastWidgetsUnderPointer(Event.GetPointerIndex());
 				TargetViewport = FindViewportForWindow(LastWidgetsUnderPointer.Window.Pin());
+
+				// Slate's hit test knows the viewport window under the cursor. Reporting it stops
+				// ImGui inferring it from viewport rects, which strands g.MouseViewport on a
+				// stale viewport and kills hover for every window in another viewport.
+				IO.AddMouseViewportEvent(TargetViewport ? TargetViewport->ID : 0);
 			}
 
 			if (!TargetViewport && !ImGui::IsMouseDown(0))
@@ -294,14 +299,14 @@ public:
 
 		if (Event.IsKeyEvent())
 		{
-			const FImGuiViewportData* FocusedViewport = FindViewportForWindow(LastFocusedWindow.Pin());
+			const ImGuiViewport* FocusedViewport = FindViewportForWindow(LastFocusedWindow.Pin());
 			return FocusedViewport != nullptr;
 		}
 
 		return true;
 	}
 
-	static FImGuiViewportData* FindViewportForWindow(const TSharedPtr<SWindow>& Window)
+	static ImGuiViewport* FindViewportForWindow(const TSharedPtr<SWindow>& Window)
 	{
 		if (!Window.IsValid())
 		{
@@ -310,10 +315,10 @@ public:
 
 		for (ImGuiViewport* Viewport : ImGui::GetPlatformIO().Viewports)
 		{
-			FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(Viewport);
+			const FImGuiViewportData* ViewportData = FImGuiViewportData::GetOrCreate(Viewport);
 			if (ViewportData->Window == Window)
 			{
-				return ViewportData;
+				return Viewport;
 			}
 		}
 
