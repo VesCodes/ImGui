@@ -579,7 +579,7 @@ void FImGuiContext::CreateTexture(ImTextureData* TextureData)
 	UTexture2D* Texture = UTexture2D::CreateTransient(
 		TextureData->Width, TextureData->Height, PF_B8G8R8A8,
 		MakeUniqueObjectName(GetTransientPackage(), UTexture2D::StaticClass(), TextureName),
-		MakeConstArrayView(static_cast<uint8*>(TextureData->GetPixels()), TextureData->GetSizeInBytes())
+		TArrayView<const uint8>(static_cast<uint8*>(TextureData->GetPixels()), TextureData->GetSizeInBytes())
 	);
 
 #if UE_VERSION_OLDER_THAN(5, 6, 0)
