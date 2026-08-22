@@ -68,6 +68,19 @@ public:
 		else
 		{
 			LastFocusedWindow.Reset();
+
+			ImGui::FScopedContext ScopedContext(Owner->GetContext());
+
+			if (ScopedContext->ShouldClearInputOnFocusLost())
+			{
+				ImGuiIO& IO = ImGui::GetIO();
+
+				// Release all pressed keys when focus is lost, otherwise they remain pressed.
+
+				IO.ClearEventsQueue();
+				IO.ClearInputKeys();
+				IO.ClearInputMouse();
+			}
 		}
 	}
 

@@ -63,6 +63,15 @@ public:
 	operator ImPlotContext*() const;
 #endif
 
+	/// Returns true if pressed input keys are released when the Slate window loses focus.
+	bool ShouldClearInputOnFocusLost() const;
+
+	/// Sets whether input keys are released when the Slate window loses focus.
+	/// @note Useful when programmatically changing focus, such as clearing and immediately restoring
+	/// keyboard focus to switch input modes (as UConsole::FakeGotoState() does). Disable this
+	/// temporarily to prevent input keys currently held by the user from being prematurely released.
+	void SetClearInputOnFocusLost(bool bClearInput);
+
 private:
 	void Initialize();
 
@@ -93,6 +102,8 @@ private:
 #endif
 
 	TArray<FTextureRef> Textures;
+
+	bool bClearInputOnFocusLost = true;
 };
 
 #endif // #ifndef IMGUI_DISABLE
