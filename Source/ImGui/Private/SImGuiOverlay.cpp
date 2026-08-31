@@ -3,6 +3,7 @@
 #ifndef IMGUI_DISABLE
 
 #include <Framework/Application/SlateApplication.h>
+#include <Framework/Application/SlateUser.h>
 
 #include "ImGuiContext.h"
 
