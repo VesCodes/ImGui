@@ -406,13 +406,17 @@ void FImGuiContext::Initialize()
 	// Ensure main viewport data is created ahead of time
 	FImGuiViewportData::GetOrCreate(ImGui::GetMainViewport());
 
-	FCoreDelegates::OnBeginFrame.AddSP(this, &FImGuiContext::BeginFrame);
+	// FCoreDelegates::OnBeginFrame fires before the engine processes input, causing a one-frame
+	// input delay. Calling FImGuiContext::BeginFrame() during FCoreDelegates::OnSamplingInput
+	// instead ensures the input is fresh, improving UI responsiveness.
+
+	FCoreDelegates::OnSamplingInput.AddSP(this, &FImGuiContext::BeginFrame);
 	FCoreDelegates::OnEndFrame.AddSP(this, &FImGuiContext::EndFrame);
 }
 
 FImGuiContext::~FImGuiContext()
 {
-	FCoreDelegates::OnBeginFrame.RemoveAll(this);
+	FCoreDelegates::OnSamplingInput.RemoveAll(this);
 	FCoreDelegates::OnEndFrame.RemoveAll(this);
 
 	if (FSlateApplication::IsInitialized())
@@ -703,7 +707,7 @@ void FImGuiContext::BeginFrame()
 	ImGui::NewFrame();
 }
 
-void FImGuiContext::EndFrame()
+void FImGuiContext::Render()
 {
 	if (!Context->WithinFrameScope)
 	{
@@ -713,7 +717,6 @@ void FImGuiContext::EndFrame()
 	ImGui::FScopedContext ScopedContext(AsShared());
 
 	ImGui::Render();
-	ImGui::UpdatePlatformWindows();
 
 	for (ImTextureData* TextureData : ImGui::GetPlatformIO().Textures)
 	{
@@ -737,6 +740,37 @@ void FImGuiContext::EndFrame()
 	{
 		ImGui_RenderWindow(ImGui::GetMainViewport(), nullptr);
 		ImGui::RenderPlatformWindowsDefault();
+	}
+}
+
+void FImGuiContext::EndFrame()
+{
+	ImGui::FScopedContext ScopedContext(AsShared());
+
+	// The overlay may not have rendered this frame, for example when its window is
+	// minimized, so make sure the frame is ended before updating the platform windows
+
+	if (Context->WithinFrameScope)
+	{
+		Render();
+	}
+
+	// ImGui::UpdatePlatformWindows() must run exactly once per ended frame: skip when no frame has
+	// run yet (a fresh context starts with the end markers behind FrameCount) and when it already
+	// ran for the current frame count (OnEndFrame can fire without a preceding NewFrame while the
+	// application is shutting down), both of which ImGui::UpdatePlatformWindows() asserts on
+
+	if (Context->FrameCountEnded != Context->FrameCount || Context->FrameCountPlatformEnded >= Context->FrameCount)
+	{
+		return;
+	}
+
+	// Updating platform windows creates, resizes, and shows OS windows, which pumps Win32 messages that can re-enter the
+	// draw pass while the draw buffer is locked, so this must run outside a Slate draw pass, from FCoreDelegates::OnEndFrame
+
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
 	}
 }
 

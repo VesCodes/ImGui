@@ -41,7 +41,10 @@ public:
 	/// Begins a new frame
 	void BeginFrame();
 
-	/// Ends the current frame
+	/// Renders the current frame's UI for display in Slate
+	void Render();
+
+	/// Ends the frame and updates platform windows
 	void EndFrame();
 
 #if WITH_NETIMGUI

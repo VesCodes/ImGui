@@ -346,6 +346,20 @@ SImGuiOverlay::~SImGuiOverlay()
 	}
 }
 
+void SImGuiOverlay::Tick(const FGeometry& AllottedGeometry, double InCurrentTime, float InDeltaTime)
+{
+	SLeafWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+
+	// FCoreDelegates::OnEndFrame fires after SImGuiOverlay::OnPaint(), causing a one-frame delay due
+	// to stale DrawData. Calling FImGuiContext::Render() here instead (since SImGuiOverlay::Tick()
+	// executes before SImGuiOverlay::OnPaint()) provides fresh DrawData and improves UI responsiveness.
+
+	if (Context.IsValid())
+	{
+		Context->Render();
+	}
+}
+
 int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
 	if (!DrawData.bValid)
