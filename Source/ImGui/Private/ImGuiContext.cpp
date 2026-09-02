@@ -19,6 +19,10 @@
 #include <Textures/SlateUpdatableTexture.h>
 #endif
 
+#if WITH_EDITOR
+#include <Engine/Engine.h>
+#endif
+
 THIRD_PARTY_INCLUDES_START
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -343,13 +347,31 @@ void FImGuiContext::Initialize()
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
 #if UE_VERSION_OLDER_THAN(5, 5, 0)
-	const int32 PieSessionId = GPlayInEditorID;
+	int32 PieSessionId = GPlayInEditorID;
 #else
-	const int32 PieSessionId = UE::GetPlayInEditorID();
+	int32 PieSessionId = UE::GetPlayInEditorID();
 #endif
 
+#if WITH_EDITOR
+	// The global ID is not reliably reset after map loading and is temporarily overridden by engine
+	// scopes, so only a live PIE world context counts as a PIE session; otherwise this is the editor.
+
+	if (PieSessionId >= 0)
+	{
+		const FWorldContext* WorldContext = GEngine->GetWorldContextFromPIEInstance(PieSessionId);
+		if (!WorldContext || !IsValid(WorldContext->World()) || !WorldContext->World()->IsPlayInEditor())
+		{
+			PieSessionId = INDEX_NONE;
+		}
+	}
+
+	// Ensure each PIE session, and the editor itself, has a uniquely identifiable context
+	const FString ContextName = GIsEditor && PieSessionId == INDEX_NONE ? TEXT("ImGui_Editor") : PieSessionId > 0 ? FString::Printf(TEXT("ImGui_%d"), PieSessionId) : TEXT("ImGui");
+#else
 	// Ensure each PIE session has a uniquely identifiable context
 	const FString ContextName = (PieSessionId > 0 ? FString::Printf(TEXT("ImGui_%d"), PieSessionId) : TEXT("ImGui"));
+#endif
+
 	FPlatformString::Convert(reinterpret_cast<UTF8CHAR*>(Context->ContextName), UE_ARRAY_COUNT(Context->ContextName), *ContextName, ContextName.Len() + 1);
 
 	const FString IniFilename = FPaths::GeneratedConfigDir() / FPlatformProperties::PlatformName() / ContextName + TEXT(".ini");
