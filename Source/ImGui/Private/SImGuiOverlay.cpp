@@ -4,29 +4,15 @@
 
 #include <Framework/Application/SlateApplication.h>
 
+#if WITH_IMGUI_NATIVE_RENDERING
+#include <RenderingThread.h>
+#endif
+
 #include "ImGuiContext.h"
 
-FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
-{
-	VtxBuffer.swap(Source->VtxBuffer);
-	IdxBuffer.swap(Source->IdxBuffer);
-	CmdBuffer.swap(Source->CmdBuffer);
-	Flags = Source->Flags;
-}
-
-FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
-{
-	bValid = Source->Valid;
-
-	TotalIdxCount = Source->TotalIdxCount;
-	TotalVtxCount = Source->TotalVtxCount;
-
-	ImGui::CopyArray(Source->CmdLists, DrawLists);
-
-	DisplayPos = Source->DisplayPos;
-	DisplaySize = Source->DisplaySize;
-	FrameBufferScale = Source->FramebufferScale;
-}
+#if WITH_IMGUI_NATIVE_RENDERING
+#include "ImGuiSlateElement.h"
+#endif
 
 class FImGuiInputProcessor : public IInputProcessor
 {
@@ -336,6 +322,13 @@ void SImGuiOverlay::Construct(const FArguments& Args)
 		InputProcessor = MakeShared<FImGuiInputProcessor>(this);
 		FSlateApplication::Get().RegisterInputPreProcessor(InputProcessor.ToSharedRef(), 0);
 	}
+
+#if WITH_IMGUI_NATIVE_RENDERING
+	for (TSharedPtr<FImGuiSlateElement>& SlateElement : SlateElements)
+	{
+		SlateElement = MakeShared<FImGuiSlateElement>();
+	}
+#endif
 }
 
 SImGuiOverlay::~SImGuiOverlay()
@@ -344,10 +337,36 @@ SImGuiOverlay::~SImGuiOverlay()
 	{
 		FSlateApplication::Get().UnregisterInputPreProcessor(InputProcessor);
 	}
+
+#if WITH_IMGUI_NATIVE_RENDERING
+	// Slate may still hold these elements in an undrawn render batch, so
+	// hand them over to the render thread instead of releasing them here.
+
+	ENQUEUE_RENDER_COMMAND(ReleaseImGuiSlateElement)([SlateElements = MoveTemp(SlateElements)](FRHICommandListImmediate& RHICmdList) mutable
+	{
+		for (TSharedPtr<FImGuiSlateElement>& SlateElement : SlateElements)
+		{
+			SlateElement.Reset();
+		}
+	});
+#endif
 }
 
 int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
+#if WITH_IMGUI_NATIVE_RENDERING
+	const TSharedPtr<FImGuiSlateElement>& SlateElement = SlateElements[CurrentSlateElementIdx];
+	if (SlateElement.IsValid())
+	{
+		SlateElement->SetGeometry_GameThread(AllottedGeometry);
+
+		OutDrawElements.PushClip(FSlateClippingZone(MyCullingRect));
+		FSlateDrawElement::MakeCustom(OutDrawElements, LayerId, SlateElement);
+		OutDrawElements.PopClip();
+	}
+
+	return LayerId;
+#else
 	if (!DrawData.bValid)
 	{
 		return LayerId;
@@ -432,6 +451,7 @@ int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGe
 	}
 
 	return LayerId;
+#endif
 }
 
 FVector2D SImGuiOverlay::ComputeDesiredSize(float LayoutScaleMultiplier) const
@@ -460,9 +480,20 @@ TSharedPtr<FImGuiContext> SImGuiOverlay::GetContext() const
 	return Context;
 }
 
-void SImGuiOverlay::SetDrawData(const ImDrawData* InDrawData)
+void SImGuiOverlay::SetDrawData(ImDrawData* InDrawData)
 {
-	DrawData = FImGuiDrawData(InDrawData);
+#if WITH_IMGUI_NATIVE_RENDERING
+	// Rotate to the next element so the render thread keeps reading the previous frame's data undisturbed.
+	CurrentSlateElementIdx = (CurrentSlateElementIdx + 1) % SlateElementCount;
+
+	const TSharedPtr<FImGuiSlateElement>& SlateElement = SlateElements[CurrentSlateElementIdx];
+	if (SlateElement.IsValid())
+	{
+		SlateElement->SetDrawData_GameThread(InDrawData);
+	}
+#else
+	DrawData.Update(InDrawData);
+#endif
 }
 
 #endif // #ifndef IMGUI_DISABLE

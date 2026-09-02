@@ -4,6 +4,7 @@ public class ImGui : ModuleRules
 {
 	protected virtual bool WithImPlot => true;
 	protected virtual bool WithNetImGui => true;
+	protected virtual bool WithNativeRendering => Target.bCompileAgainstEngine;
 
 	public ImGui(ReadOnlyTargetRules Target) : base(Target)
 	{
@@ -63,6 +64,22 @@ public class ImGui : ModuleRules
 		else
 		{
 			PublicDefinitions.Add("WITH_NETIMGUI=0");
+		}
+
+		if (WithNativeRendering)
+		{
+			PrivateDependencyModuleNames.AddRange(new[]
+			{
+				"RHI",
+				"RenderCore",
+				"ImGuiShaders"
+			});
+
+			PublicDefinitions.Add("WITH_IMGUI_NATIVE_RENDERING=1");
+		}
+		else
+		{
+			PublicDefinitions.Add("WITH_IMGUI_NATIVE_RENDERING=0");
 		}
 	}
 }

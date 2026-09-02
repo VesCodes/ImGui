@@ -1,0 +1,37 @@
+#include "/Engine/Private/Common.ush"
+#include "/Engine/Private/GammaCorrectionCommon.ush"
+
+float4x4 ProjectionMatrix;
+
+void MainVS(
+	in float2 InPosition : ATTRIBUTE0,
+	in float2 InUV : ATTRIBUTE1,
+	in float4 InColor : ATTRIBUTE2,
+	out float4 OutPosition : SV_POSITION,
+	out float2 OutUV : TEXCOORD0,
+	out float4 OutColor : COLOR0)
+{
+	OutPosition = mul(float4(InPosition, 0, 1), ProjectionMatrix);
+	OutUV = InUV;
+	OutColor = InColor;
+}
+
+Texture2D Texture;
+SamplerState TextureSampler;
+bool bSrgb;
+
+void MainPS(
+	in float4 InPosition : SV_POSITION,
+	in float2 InUV : TEXCOORD0,
+	in float4 InColor : COLOR0,
+	out float4 OutColor : SV_Target0)
+{
+	float4 TextureColor = Texture2DSample(Texture, TextureSampler, InUV);
+
+	if (bSrgb)
+	{
+		TextureColor.rgb = LinearToSrgb(TextureColor.rgb);
+	}
+
+	OutColor = InColor * TextureColor;
+}
