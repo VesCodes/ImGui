@@ -700,7 +700,14 @@ void FImGuiContext::BeginFrame()
 	IO.DeltaTime = FApp::GetDeltaTime();
 	IO.DisplaySize = ImGui_GetWindowSize(ImGui::GetMainViewport());
 
-	ImGui::NewFrame();
+	// Skip rendering while DisplaySize is invalid (i.e. SImGuiOverlay has no valid geometry yet), because
+	// restoring windows from the .ini would then place them at wrong absolute positions. This only applies to
+	// the first frame; otherwise SImGuiWindow left behind after PIE ends would remain alive forever.
+
+	if (Context->FrameCount > 0 || (IO.DisplaySize.x > 0.0f && IO.DisplaySize.y > 0.0f))
+	{
+		ImGui::NewFrame();
+	}
 }
 
 void FImGuiContext::EndFrame()
