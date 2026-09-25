@@ -3,8 +3,10 @@
 #ifndef IMGUI_DISABLE
 
 #include <Framework/Application/SlateApplication.h>
+#include <Framework/Application/SlateUser.h>
 
 #include "ImGuiContext.h"
+#include "Widgets/SViewport.h"
 
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
 {
@@ -229,6 +231,16 @@ public:
 			IO.AddMouseButtonEvent(ImGuiMouseButton_Middle, true);
 		}
 
+		if (IO.WantCaptureMouse && !Owner->HasKeyboardFocus() &&
+		    Owner->GetTickSpaceGeometry().GetLayoutBoundingRect().ContainsPoint(Event.GetScreenSpacePosition()))
+		{
+			// A click captured by Dear ImGui never goes through Slate routing, so keyboard focus stays wherever it
+			// was and key events then fail the focus-path check in FImGuiInputProcessor::ShouldHandleEvent(). Move
+			// focus to this overlay while the click lands inside it to keep Dear ImGui receiving keyboard input.
+
+			SlateApp.SetKeyboardFocus(Owner->AsShared(), EFocusCause::Mouse);
+		}
+
 		return IO.WantCaptureMouse;
 	}
 
@@ -295,7 +307,24 @@ public:
 		if (Event.IsKeyEvent())
 		{
 			const FImGuiViewportData* FocusedViewport = FindViewportForWindow(LastFocusedWindow.Pin());
+
+#if PLATFORM_DESKTOP
+			if (FocusedViewport == nullptr)
+			{
+				return false;
+			}
+
+			const TSharedPtr<FSlateUser> SlateUser = SlateApp.GetUser(Event);
+			const TSharedPtr<SViewport> Viewport = FocusedViewport->Viewport.Pin();
+
+			if (SlateUser.IsValid() && Viewport.IsValid())
+			{
+				// Ignore input if the game viewport is not in the focus path.
+				return SlateUser->IsWidgetInFocusPath(Viewport);
+			}
+#else
 			return FocusedViewport != nullptr;
+#endif
 		}
 
 		return true;
