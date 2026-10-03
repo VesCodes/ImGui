@@ -25,6 +25,9 @@ struct IMGUI_API FImGuiViewportData
 
 	TWeakPtr<SWindow> Window = nullptr;
 	TWeakPtr<SImGuiOverlay> Overlay = nullptr;
+
+	FVector2f CachedOverlayPos = FVector2f::ZeroVector;
+	FVector2f CachedOverlaySize = FVector2f::ZeroVector;
 };
 
 class IMGUI_API FImGuiContext : public TSharedFromThis<FImGuiContext>
