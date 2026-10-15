@@ -5,37 +5,9 @@
 #include <Framework/Application/IInputProcessor.h>
 #include <Widgets/SLeafWidget.h>
 
-THIRD_PARTY_INCLUDES_START
-#include <imgui.h>
-THIRD_PARTY_INCLUDES_END
+#include "ImGuiDrawData.h"
 
-struct FImGuiDrawList
-{
-	FImGuiDrawList() = default;
-	explicit FImGuiDrawList(ImDrawList* Source);
-
-	ImVector<ImDrawVert> VtxBuffer;
-	ImVector<ImDrawIdx> IdxBuffer;
-	ImVector<ImDrawCmd> CmdBuffer;
-	ImDrawListFlags Flags = ImDrawListFlags_None;
-};
-
-struct FImGuiDrawData
-{
-	FImGuiDrawData() = default;
-	explicit FImGuiDrawData(const ImDrawData* Source);
-
-	bool bValid = false;
-
-	int32 TotalIdxCount = 0;
-	int32 TotalVtxCount = 0;
-
-	TArray<FImGuiDrawList> DrawLists;
-
-	FVector2f DisplayPos = FVector2f::ZeroVector;
-	FVector2f DisplaySize = FVector2f::ZeroVector;
-	FVector2f FrameBufferScale = FVector2f::ZeroVector;
-};
+class FImGuiSlateElement;
 
 class SImGuiOverlay : public SLeafWidget
 {
@@ -57,12 +29,22 @@ public:
 	virtual FReply OnKeyChar(const FGeometry& MyGeometry, const FCharacterEvent& Event) override;
 
 	TSharedPtr<FImGuiContext> GetContext() const;
-	void SetDrawData(const ImDrawData* InDrawData);
+	void SetDrawData(ImDrawData* InDrawData);
 
 private:
 	TSharedPtr<FImGuiContext> Context = nullptr;
 	TSharedPtr<IInputProcessor> InputProcessor = nullptr;
+
+#if WITH_IMGUI_NATIVE_RENDERING
+	/// Number of Slate elements to rotate between; two are enough to keep the render thread from
+	/// reading the element the game thread is writing to, as it never trails by more than a frame.
+	static constexpr int32 SlateElementCount = 2;
+
+	TStaticArray<TSharedPtr<FImGuiSlateElement>, SlateElementCount> SlateElements;
+	int32 CurrentSlateElementIdx = 0;
+#else
 	FImGuiDrawData DrawData;
+#endif
 };
 
 #endif // #ifndef IMGUI_DISABLE

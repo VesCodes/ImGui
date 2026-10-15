@@ -11,6 +11,11 @@
 	"MarketplaceURL": "",
 	"Modules": [
 		{
+			"Name": "ImGuiShaders",
+			"Type": "Runtime",
+			"LoadingPhase": "PostConfigInit"
+		},
+		{
 			"Name": "ImGui",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
