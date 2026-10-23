@@ -61,13 +61,28 @@ public:
 
 	void OnFocusChanging(const FFocusEvent& Event, const FWeakWidgetPath& OldWidgetPath, const TSharedPtr<SWidget>& OldWidget, const FWidgetPath& NewWidgetPath, const TSharedPtr<SWidget>& NewWidget)
 	{
+		ImGui::FScopedContext ScopedContext(Owner->GetContext());
+
+		ImGuiIO& IO = ImGui::GetIO();
+
 		if (NewWidgetPath.IsValid())
 		{
 			LastFocusedWindow = NewWidgetPath.GetDeepestWindow();
+
+			// The paired focus event makes a focus loss immediately followed by a restore, as UConsole::FakeGotoState()
+			// does, cancel out in the next ImGui::NewFrame() instead of releasing keys held by the user.
+
+			IO.AddFocusEvent(true);
 		}
 		else
 		{
 			LastFocusedWindow.Reset();
+
+			// Release all pressed keys when focus is lost, otherwise they remain pressed. ImGuiIO::AddFocusEvent() defers the
+			// release to the next ImGui::NewFrame() and does not clear the input queue, so clear it before queuing the event.
+
+			IO.ClearEventsQueue();
+			IO.AddFocusEvent(false);
 		}
 	}
 
