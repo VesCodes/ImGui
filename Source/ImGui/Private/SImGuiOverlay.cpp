@@ -382,6 +382,12 @@ int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGe
 		{
 #if WITH_ENGINE
 			UTexture* Texture = DrawCmd.GetTexID();
+
+			if (Texture && !Texture->IsValidLowLevel())
+			{
+				Texture = nullptr;
+			}
+			
 			if (TextureBrush.GetResourceObject() != Texture)
 			{
 				TextureBrush.SetResourceObject(Texture);
