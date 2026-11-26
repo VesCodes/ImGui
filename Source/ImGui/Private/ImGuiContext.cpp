@@ -530,6 +530,26 @@ FImGuiContext::operator ImPlotContext*() const
 }
 #endif
 
+bool FImGuiContext::IsMouseInputEnabled() const
+{
+	return bMouseInputEnabled;
+}
+
+void FImGuiContext::SetMouseInputEnabled(const bool bEnabled)
+{
+	bMouseInputEnabled = bEnabled;
+}
+
+bool FImGuiContext::IsTouchInputEnabled() const
+{
+	return bTouchInputEnabled;
+}
+
+void FImGuiContext::SetTouchInputEnabled(const bool bEnabled)
+{
+	bTouchInputEnabled = bEnabled;
+}
+
 void FImGuiContext::OnDisplayMetricsChanged(const FDisplayMetrics& DisplayMetrics)
 {
 	ImGui::FScopedContext ScopedContext(AsShared());
