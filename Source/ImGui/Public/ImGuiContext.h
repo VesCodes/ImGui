@@ -65,6 +65,18 @@ public:
 	operator ImPlotContext*() const;
 #endif
 
+	/// Returns whether the Slate backend accepts hardware mouse input for this context.
+	bool IsMouseInputEnabled() const;
+
+	/// Enables or disables hardware mouse input without changing touchscreen input.
+	void SetMouseInputEnabled(bool bEnabled);
+
+	/// Returns whether the Slate backend accepts touchscreen input for this context.
+	bool IsTouchInputEnabled() const;
+
+	/// Enables or disables touchscreen input without changing hardware mouse input.
+	void SetTouchInputEnabled(bool bEnabled);
+
 private:
 	void Initialize();
 
@@ -95,6 +107,9 @@ private:
 #endif
 
 	TArray<FTextureRef> Textures;
+
+	uint8 bMouseInputEnabled : 1 = true;
+	uint8 bTouchInputEnabled : 1 = true;
 };
 
 #endif // #ifndef IMGUI_DISABLE

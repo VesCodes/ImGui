@@ -379,7 +379,7 @@ public:
 			return false;
 		}
 
-		if (!DoesImGuiAcceptPointerInput())
+		if (!DoesImGuiAcceptPointerInput(ImGuiMouseSource_Mouse))
 		{
 			return false;
 		}
@@ -580,7 +580,7 @@ private:
 
 	bool HandleMouseHover(FSlateApplication& SlateApp, const FPointerEvent& Event)
 	{
-		if (!DoesImGuiAcceptPointerInput())
+		if (!DoesImGuiAcceptPointerInput(ImGuiMouseSource_Mouse))
 		{
 			return false;
 		}
@@ -640,7 +640,7 @@ private:
 		}
 		else
 		{
-			if (!DoesImGuiAcceptPointerInput())
+			if (!DoesImGuiAcceptPointerInput(ImGuiMouseSource_Mouse))
 			{
 				return false;
 			}
@@ -687,7 +687,7 @@ private:
 		}
 		else
 		{
-			if (!DoesImGuiAcceptPointerInput())
+			if (!DoesImGuiAcceptPointerInput(ImGuiMouseSource_TouchScreen))
 			{
 				return false;
 			}
@@ -938,15 +938,32 @@ private:
 		return PointerLocation;
 	}
 
-	static bool DoesImGuiAcceptPointerInput()
+	static bool DoesImGuiAcceptPointerInputGlobally()
 	{
+		// ImGuiConfigFlags_NoMouse is a master switch because Dear ImGui uses one pointer state for every source.
+
 		const ImGuiIO& IO = ImGui::GetIO();
-
-		// ImGuiConfigFlags_NoMouse disables touch too because Dear ImGui uses one pointer state for both.
-		// Cursor visibility is not permission: a touchscreen can operate the UI without any visible mouse.
-		// Respect application-controlled flags rather than silently enabling input again.
-
 		return IO.AppAcceptingEvents && !(IO.ConfigFlags & ImGuiConfigFlags_NoMouse);
+	}
+
+	bool DoesImGuiAcceptPointerInput(const ImGuiMouseSource Source) const
+	{
+		if (!DoesImGuiAcceptPointerInputGlobally())
+		{
+			return false;
+		}
+
+		switch (Source)
+		{
+			case ImGuiMouseSource_Mouse:
+				return Owner->GetContext()->IsMouseInputEnabled();
+
+			case ImGuiMouseSource_TouchScreen:
+				return Owner->GetContext()->IsTouchInputEnabled();
+
+			default:
+				return true;
+		}
 	}
 
 	/// Chooses mouse consumption from hover-derived ImGuiIO::WantCaptureMouse and popup-dismissal rules.
@@ -1089,7 +1106,7 @@ private:
 		// Clear pending pointer input even without a physical owner: a quick tap can already be
 		// released while its press and release still wait in Dear ImGui's trickled event queue.
 
-		if (bCancelPointerInteractionRequested || !DoesImGuiAcceptPointerInput())
+		if (bCancelPointerInteractionRequested || !DoesImGuiAcceptPointerInputGlobally())
 		{
 			bCancelPointerInteractionRequested = false;
 
@@ -1097,12 +1114,44 @@ private:
 
 			if (PointerInteraction.IsSet())
 			{
-				// ImGuiIO::ClearInputMouse() does not release the physical contact. Retain its identity and
-				// bConsumePointerInput until release: disabling input while dragging a slider and enabling it
-				// with the finger still down must not resume the drag or leak its remainder to the application.
+				// ImGuiIO::ClearInputMouse() does not release the physical button or contact. Retain its identity
+				// and bConsumePointerInput until release, so re-enabling input cannot resume a canceled drag.
 
 				PointerInteraction->State = EPointerInteractionState::CanceledUntilRelease;
 			}
+
+			return;
+		}
+
+		CancelPointerInputIfDisabled(ImGuiMouseSource_Mouse);
+		CancelPointerInputIfDisabled(ImGuiMouseSource_TouchScreen);
+	}
+
+	void CancelPointerInputIfDisabled(const ImGuiMouseSource Source)
+	{
+		if (DoesImGuiAcceptPointerInput(Source))
+		{
+			return;
+		}
+
+		// Remove only this source's queued and processed state so disabling it does not
+		// interrupt an interaction from another source that shares Dear ImGui's pointer storage.
+
+		ImGuiContext& Context = *ImGui::GetCurrentContext();
+
+		DiscardQueuedPointerEvents(Context, Source);
+
+		if (Context.IO.MouseSource == Source)
+		{
+			CancelImGuiPointerActivity(Context);
+			ClearImGuiPointerState(Context.IO);
+		}
+
+		if (PointerInteraction.IsSet() && PointerInteraction->Source == Source)
+		{
+			// Retain physical ownership until every tracked button or the selected contact is released.
+
+			PointerInteraction->State = EPointerInteractionState::CanceledUntilRelease;
 		}
 	}
 
@@ -1113,6 +1162,28 @@ private:
 		DiscardQueuedPointerEvents(Context);
 		CancelImGuiPointerActivity(Context);
 		ClearImGuiPointerState(Context.IO);
+	}
+
+	static void DiscardQueuedPointerEvents(ImGuiContext& Context, const ImGuiMouseSource Source)
+	{
+		// Mouse and touch share ImGuiInputSource_Mouse. Match the ImGuiMouseSource on position, button
+		// and wheel events so canceling one source leaves the other source's queued input intact.
+
+		ImVector<ImGuiInputEvent>& InputEventsQueue = Context.InputEventsQueue;
+
+		for (int32 EventIndex = InputEventsQueue.Size - 1; EventIndex >= 0; EventIndex--)
+		{
+			const ImGuiInputEvent& InputEvent = InputEventsQueue[EventIndex];
+
+			if ((InputEvent.Type == ImGuiInputEventType_MousePos && InputEvent.MousePos.MouseSource == Source) ||
+			    (InputEvent.Type == ImGuiInputEventType_MouseWheel && InputEvent.MouseWheel.MouseSource == Source) ||
+			    (InputEvent.Type == ImGuiInputEventType_MouseButton && InputEvent.MouseButton.MouseSource == Source) ||
+			    // ImGuiIO::AddMouseViewportEvent() represents hover and stores no source, so it belongs to hardware mouse.
+			    (InputEvent.Type == ImGuiInputEventType_MouseViewport && Source == ImGuiMouseSource_Mouse))
+			{
+				InputEventsQueue.erase(InputEventsQueue.Data + EventIndex);
+			}
+		}
 	}
 
 	static void DiscardQueuedPointerEvents(ImGuiContext& Context)
